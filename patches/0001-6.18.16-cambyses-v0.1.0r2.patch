@@ -1,18 +1,18 @@
-From 107e88c32e468e7a54e9a10fb1993cd5c11fac87 Mon Sep 17 00:00:00 2001
+From 4dacdd4f215f49737bfc46dff633e81ee79b65f4 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Sun, 15 Mar 2026 16:02:07 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.1.0
+Date: Sun, 15 Mar 2026 20:47:41 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.1.0r2
 
 ---
  init/Kconfig                       |  35 ++
  kernel/sched/Makefile              |  19 +
  kernel/sched/cambyses.c            | 579 +++++++++++++++++++++++++++++
  kernel/sched/cambyses.h            |  99 +++++
- kernel/sched/cambyses_simd_avx2.c  | 242 ++++++++++++
+ kernel/sched/cambyses_simd_avx2.c  | 259 +++++++++++++
  kernel/sched/cambyses_simd_ssse3.c | 105 ++++++
  kernel/sched/cambyses_sort.c       | 209 +++++++++++
  kernel/sched/fair.c                |  19 +
- 8 files changed, 1307 insertions(+)
+ 8 files changed, 1324 insertions(+)
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
  create mode 100644 kernel/sched/cambyses_simd_avx2.c
@@ -20,7 +20,7 @@ Subject: [PATCH] 6.18.16-cambyses-v0.1.0
  create mode 100644 kernel/sched/cambyses_sort.c
 
 diff --git a/init/Kconfig b/init/Kconfig
-index cab3ad28ca..2181c8aec7 100644
+index cab3ad28ca..5324931d24 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -1423,6 +1423,41 @@ config CHECKPOINT_RESTORE
@@ -28,7 +28,7 @@ index cab3ad28ca..2181c8aec7 100644
  	  If unsure, say N here.
  
 +config SCHED_CAMBYSES
-+	bool "CAMBYSES scored migration selection for CFS load balancer"
++	bool "Cambyses scored migration selection for CFS load balancer"
 +	depends on SMP
 +	default y
 +	help
@@ -40,12 +40,12 @@ index cab3ad28ca..2181c8aec7 100644
 +	  migration candidates.
 +
 +	  When disabled at runtime (sysctl kernel.sched_cambyses_enabled=0),
-+	  all CAMBYSES paths are NOPed out via static key at zero cost.
++	  all Cambyses paths are NOPed out via static key at zero cost.
 +
 +	  If unsure, say Y here.
 +
 +config SCHED_CAMBYSES_SIMD
-+	bool "SIMD acceleration for CAMBYSES batch scoring"
++	bool "SIMD acceleration for Cambyses batch scoring"
 +	depends on SCHED_CAMBYSES
 +	depends on X86_64
 +	default y
@@ -66,18 +66,18 @@ index cab3ad28ca..2181c8aec7 100644
  	bool "Automatic process group scheduling"
  	select CGROUPS
 diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index 8ae86371dd..b28d108b5e 100644
+index 8ae86371dd..3ce826bea7 100644
 --- a/kernel/sched/Makefile
 +++ b/kernel/sched/Makefile
 @@ -37,3 +37,22 @@ obj-y += core.o
  obj-y += fair.o
  obj-y += build_policy.o
  obj-y += build_utility.o
-+# CAMBYSES: cambyses.c is #included from fair.c (needs access to static functions).
++# Cambyses: cambyses.c is #included from fair.c (needs access to static functions).
 +# Sort networks are in a separate TU to prevent auto-vectorization contamination.
 +obj-$(CONFIG_SCHED_CAMBYSES) += cambyses_sort.o
 +
-+# CAMBYSES SIMD: Separate TUs with ISA-specific flags.
++# Cambyses SIMD: Separate TUs with ISA-specific flags.
 +# FPU_KILL_FLAGS must be removed first (kernel builds with -mno-sse etc.),
 +# then ISA flags added.  Following Nap's pattern (drivers/cpuidle/governors/nap/).
 +ifdef CONFIG_SCHED_CAMBYSES_SIMD
@@ -94,13 +94,13 @@ index 8ae86371dd..b28d108b5e 100644
 +endif
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..a717fa8caa
+index 0000000000..bae8ceab65
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,579 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
-+ * CAMBYSES — Context-Aware Migration Balancer Yielding Scored Entity Selection
++ * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
 + *
 + * Scored migration selection for CFS load balancer.
 + * Replaces FIFO selection with a multi-feature scoring function that evaluates
@@ -117,7 +117,7 @@ index 0000000000..a717fa8caa
 + * Version Information:
 + */
 +
-+#define CAMBYSES_PROGNAME "CAMBYSES Migration Selector"
++#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
 +#define CAMBYSES_VERSION  "0.1.0"
@@ -679,13 +679,13 @@ index 0000000000..a717fa8caa
 +#endif /* CONFIG_SYSCTL */
 diff --git a/kernel/sched/cambyses.h b/kernel/sched/cambyses.h
 new file mode 100644
-index 0000000000..47992d0d77
+index 0000000000..dd313c8229
 --- /dev/null
 +++ b/kernel/sched/cambyses.h
 @@ -0,0 +1,99 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
-+ * CAMBYSES — Context-Aware Migration Balancer Yielding Scored Entity Selection
++ * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
 + *
 + * Scored migration selection for CFS load balancer Pull path.
 + * See IMPLEMENTATION.md for design details.
@@ -784,13 +784,13 @@ index 0000000000..47992d0d77
 +#endif /* _KERNEL_SCHED_CAMBYSES_H */
 diff --git a/kernel/sched/cambyses_simd_avx2.c b/kernel/sched/cambyses_simd_avx2.c
 new file mode 100644
-index 0000000000..0e4a3b77cd
+index 0000000000..902bc8406d
 --- /dev/null
 +++ b/kernel/sched/cambyses_simd_avx2.c
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,259 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
-+ * cambyses_simd_avx2.c — AVX2 batch scoring for CAMBYSES
++ * cambyses_simd_avx2.c — AVX2 batch scoring for Cambyses
 + *
 + * Computes migration scores for up to 32 candidates using VPMADDUBSW.
 + * 8 candidates per ymm register, 4 features (u8) × 4 weights (s8).
@@ -907,19 +907,36 @@ index 0000000000..0e4a3b77cd
 + * @packed: 32 × s32 array, 32-byte aligned, padded with INT_MIN.
 + */
 +
++/* Signed 32-bit min/max — guaranteed single VPMINSD/VPMAXSD on GCC and clang */
++static __always_inline v8si v8si_min(v8si a, v8si b)
++{
++	v8si r;
++
++	asm("vpminsd %2, %1, %0" : "=x"(r) : "x"(a), "x"(b));
++	return r;
++}
++
++static __always_inline v8si v8si_max(v8si a, v8si b)
++{
++	v8si r;
++
++	asm("vpmaxsd %2, %1, %0" : "=x"(r) : "x"(a), "x"(b));
++	return r;
++}
++
 +/* Intra-register compare-and-swap at distance 1 */
 +#define CAS_D1(r, blend) do {						\
 +	v8si _s = __builtin_ia32_pshufd256(r, 0xB1);			\
-+	v8si _lo = __builtin_ia32_pminsd256(r, _s);			\
-+	v8si _hi = __builtin_ia32_pmaxsd256(r, _s);			\
++	v8si _lo = v8si_min(r, _s);					\
++	v8si _hi = v8si_max(r, _s);					\
 +	r = __builtin_ia32_pblendd256(_hi, _lo, blend);			\
 +} while (0)
 +
 +/* Intra-register compare-and-swap at distance 2 */
 +#define CAS_D2(r, blend) do {						\
 +	v8si _s = __builtin_ia32_pshufd256(r, 0x4E);			\
-+	v8si _lo = __builtin_ia32_pminsd256(r, _s);			\
-+	v8si _hi = __builtin_ia32_pmaxsd256(r, _s);			\
++	v8si _lo = v8si_min(r, _s);					\
++	v8si _hi = v8si_max(r, _s);					\
 +	r = __builtin_ia32_pblendd256(_hi, _lo, blend);			\
 +} while (0)
 +
@@ -927,22 +944,22 @@ index 0000000000..0e4a3b77cd
 +#define CAS_D4(r, blend) do {						\
 +	v8si _s = (v8si)__builtin_ia32_permti256((v4di)(r),		\
 +						  (v4di)(r), 0x01);	\
-+	v8si _lo = __builtin_ia32_pminsd256(r, _s);			\
-+	v8si _hi = __builtin_ia32_pmaxsd256(r, _s);			\
++	v8si _lo = v8si_min(r, _s);					\
++	v8si _hi = v8si_max(r, _s);					\
 +	r = __builtin_ia32_pblendd256(_hi, _lo, blend);			\
 +} while (0)
 +
 +/* Inter-register compare-and-swap: descending (lower reg gets max) */
 +#define CAS_REG_DESC(ra, rb) do {					\
-+	v8si _lo = __builtin_ia32_pminsd256(ra, rb);			\
-+	v8si _hi = __builtin_ia32_pmaxsd256(ra, rb);			\
++	v8si _lo = v8si_min(ra, rb);					\
++	v8si _hi = v8si_max(ra, rb);					\
 +	ra = _hi; rb = _lo;						\
 +} while (0)
 +
 +/* Inter-register compare-and-swap: ascending (lower reg gets min) */
 +#define CAS_REG_ASC(ra, rb) do {					\
-+	v8si _lo = __builtin_ia32_pminsd256(ra, rb);			\
-+	v8si _hi = __builtin_ia32_pmaxsd256(ra, rb);			\
++	v8si _lo = v8si_min(ra, rb);					\
++	v8si _hi = v8si_max(ra, rb);					\
 +	ra = _lo; rb = _hi;						\
 +} while (0)
 +
@@ -1032,13 +1049,13 @@ index 0000000000..0e4a3b77cd
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
 diff --git a/kernel/sched/cambyses_simd_ssse3.c b/kernel/sched/cambyses_simd_ssse3.c
 new file mode 100644
-index 0000000000..e1fbcd4bee
+index 0000000000..5f97617abc
 --- /dev/null
 +++ b/kernel/sched/cambyses_simd_ssse3.c
 @@ -0,0 +1,105 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
-+ * cambyses_simd_ssse3.c — SSSE3 batch scoring for CAMBYSES
++ * cambyses_simd_ssse3.c — SSSE3 batch scoring for Cambyses
 + *
 + * Computes migration scores for up to 32 candidates using PMADDUBSW.
 + * 4 candidates per xmm register, 4 features (u8) × 4 weights (s8).
@@ -1143,13 +1160,13 @@ index 0000000000..e1fbcd4bee
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
 diff --git a/kernel/sched/cambyses_sort.c b/kernel/sched/cambyses_sort.c
 new file mode 100644
-index 0000000000..103db35db5
+index 0000000000..7418e193f2
 --- /dev/null
 +++ b/kernel/sched/cambyses_sort.c
 @@ -0,0 +1,209 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
-+ * CAMBYSES — Bitonic sort networks for candidate ranking
++ * Cambyses — Bitonic sort networks for candidate ranking
 + *
 + * Separate translation unit to prevent auto-vectorization contamination.
 + * This file is compiled WITHOUT SIMD flags (-msse2, -mavx2).

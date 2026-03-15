@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * asymmetric_drain — CAMBYSES pull-migration benchmark
+ * asymmetric_drain — Cambyses pull-migration benchmark
  *
  * Measures the quality of CFS load balancer pull decisions by repeatedly
  * creating and resolving inter-core imbalance.
@@ -8,9 +8,9 @@
  * Design:
  *   - All tasks are CPU-bound (no sleep) → zero wake-up migrations.
  *   - Every migration counted is a pull migration from load_balance(),
- *     which is exactly the path CAMBYSES modifies.
+ *     which is exactly the path Cambyses modifies.
  *   - Heavy workers (nice 0, high load weight) and light workers (nice +10,
- *     low load weight) create score differentiation for CAMBYSES.
+ *     low load weight) create score differentiation for Cambyses.
  *   - Each round: pin tasks to overloaded cores → settle → open affinity →
  *     measure migrations during burst → re-pin for next round.
  *   - Reports per-round stats and summary with mean/stddev.
@@ -359,9 +359,9 @@ int main(int argc, char **argv)
 	printf("Rounds: %d × %dms burst + %dms settle\n",
 	       nr_rounds, burst_ms, settle_ms);
 	if (cambyses >= 0)
-		printf("CAMBYSES: %s\n", cambyses ? "enabled" : "disabled (vanilla FIFO)");
+		printf("Cambyses: %s\n", cambyses ? "enabled" : "disabled (vanilla FIFO)");
 	else
-		printf("CAMBYSES: not available\n");
+		printf("Cambyses: not available\n");
 	printf("\n");
 
 	/* Allocate shared state */

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run asymmetric_drain with CAMBYSES on vs off and compare results.
+# Run asymmetric_drain with Cambyses on vs off and compare results.
 #
 # Usage: sudo ./run.sh [asymmetric_drain options...]
 #        sudo ./run.sh --sweep-w1 1,2,3 [asymmetric_drain options...]
@@ -41,7 +41,7 @@ SYSCTL_ENABLED="/proc/sys/kernel/sched_cambyses_enabled"
 SYSCTL_W1="/proc/sys/kernel/sched_cambyses_w1"
 
 if [ ! -f "$SYSCTL_ENABLED" ]; then
-    echo "Error: $SYSCTL_ENABLED not found — is CAMBYSES built into the kernel?" >&2
+    echo "Error: $SYSCTL_ENABLED not found — is Cambyses built into the kernel?" >&2
     exit 1
 fi
 
@@ -62,18 +62,18 @@ echo "========================================"
 echo
 
 # --- Vanilla (FIFO) ---
-echo ">>> Vanilla (CAMBYSES disabled)"
+echo ">>> Vanilla (Cambyses disabled)"
 echo "----------------------------------------"
 sysctl -q kernel.sched_cambyses_enabled=0
 run_bench
 echo
 sleep 2
 
-# --- CAMBYSES runs ---
+# --- Cambyses runs ---
 if [ -n "$SWEEP_W1" ] && [ -f "$SYSCTL_W1" ]; then
     IFS=',' read -ra W1_VALS <<< "$SWEEP_W1"
     for w1 in "${W1_VALS[@]}"; do
-        echo ">>> CAMBYSES (w1=$w1)"
+        echo ">>> Cambyses (w1=$w1)"
         echo "----------------------------------------"
         sysctl -q kernel.sched_cambyses_enabled=1
         sysctl -q kernel.sched_cambyses_w1="$w1"
@@ -82,7 +82,7 @@ if [ -n "$SWEEP_W1" ] && [ -f "$SYSCTL_W1" ]; then
         sleep 2
     done
 else
-    echo ">>> CAMBYSES (w1=${ORIG_W1:-default})"
+    echo ">>> Cambyses (w1=${ORIG_W1:-default})"
     echo "----------------------------------------"
     sysctl -q kernel.sched_cambyses_enabled=1
     run_bench

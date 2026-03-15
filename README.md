@@ -1,4 +1,4 @@
-# CAMBYSES
+# Cambyses
 
 **Context-Aware Migration Balancer Yielding Scored Entity Selection**
 
@@ -12,7 +12,7 @@ This means that in a runqueue with a mix of cache-hot, cache-cold, heavy, and li
 
 ## Approach
 
-CAMBYSES introduces a 3-phase pipeline that collects, scores, and ranks migration candidates before detaching:
+Cambyses introduces a 3-phase pipeline that collects, scores, and ranks migration candidates before detaching:
 
 1. **Phase 1 — Sampling**: Collect up to `loop_max` candidates that pass `can_migrate_task()`, compute a migration score for each, and filter by imbalance budget eligibility.
 2. **Phase 2 — Sorting**: Sort candidates in descending score order using a fixed-size bitonic sort network (19 comparators for <= 8 candidates, 63 for <= 16, 159 for <= 32). Comparison counts are compile-time determined with no branch mispredictions.
@@ -20,7 +20,7 @@ CAMBYSES introduces a 3-phase pipeline that collects, scores, and ranks migratio
 
 Both the pull path (`detach_tasks()`) and push path (`detach_one_task()`) are supported. The push path uses a simple max search since only one task is migrated.
 
-All CAMBYSES paths run under the existing `rq_lock_irqsave` — no additional locking is required.
+All Cambyses paths run under the existing `rq_lock_irqsave` — no additional locking is required.
 
 ## Scoring
 
@@ -67,14 +67,14 @@ Features are packed in AoS (Array of Structures) layout — 4 bytes per candidat
 
 | Option | Description |
 |--------|-------------|
-| `CONFIG_SCHED_CAMBYSES` | Core CAMBYSES functionality. Depends on `SMP`. Default `y`. |
+| `CONFIG_SCHED_CAMBYSES` | Core Cambyses functionality. Depends on `SMP`. Default `y`. |
 | `CONFIG_SCHED_CAMBYSES_SIMD` | SIMD batch scoring acceleration. Depends on `SCHED_CAMBYSES` and `X86_64` or `ARM64`. Default `n`. |
 
 ### Runtime (sysctl)
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `kernel.sched_cambyses_enabled` | 1 | Enable/disable via static key. When set to 0, all CAMBYSES paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
+| `kernel.sched_cambyses_enabled` | 1 | Enable/disable via static key. When set to 0, all Cambyses paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
 | `kernel.sched_cambyses_w0` | 1 | Cache coldness weight (0–3) |
 | `kernel.sched_cambyses_w1` | 3 | Load contribution weight (0–3) |
 | `kernel.sched_cambyses_w2` | 1 | Voluntary switch ratio weight (0–3) |
