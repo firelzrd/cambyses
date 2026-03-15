@@ -1,7 +1,7 @@
-From 4dacdd4f215f49737bfc46dff633e81ee79b65f4 Mon Sep 17 00:00:00 2001
+From 26697156bbc591321d6e63f4ab3a27b39a93d7ae Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Sun, 15 Mar 2026 20:47:41 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.1.0r2
+Date: Mon, 16 Mar 2026 04:28:11 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.1.1
 
 ---
  init/Kconfig                       |  35 ++
@@ -20,7 +20,7 @@ Subject: [PATCH] 6.18.16-cambyses-v0.1.0r2
  create mode 100644 kernel/sched/cambyses_sort.c
 
 diff --git a/init/Kconfig b/init/Kconfig
-index cab3ad28ca..5324931d24 100644
+index cab3ad28ca..6cbf012a0e 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -1423,6 +1423,41 @@ config CHECKPOINT_RESTORE
@@ -39,7 +39,7 @@ index cab3ad28ca..5324931d24 100644
 +	  affinity breadth, and wakee stability to select the most suitable
 +	  migration candidates.
 +
-+	  When disabled at runtime (sysctl kernel.sched_cambyses_enabled=0),
++	  When disabled at runtime (sysctl kernel.sched_cambyses=0),
 +	  all Cambyses paths are NOPed out via static key at zero cost.
 +
 +	  If unsure, say Y here.
@@ -94,7 +94,7 @@ index 8ae86371dd..3ce826bea7 100644
 +endif
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..bae8ceab65
+index 0000000000..77df9dc5af
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,579 @@
@@ -120,14 +120,14 @@ index 0000000000..bae8ceab65
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.1.0"
++#define CAMBYSES_VERSION  "0.1.1"
 +
 +/* Runtime toggle — NOP-patched when disabled */
-+DEFINE_STATIC_KEY_FALSE(sched_cambyses_enabled);
++DEFINE_STATIC_KEY_TRUE(sched_cambyses);
 +
 +/* Default weights: w1=3 (load contribution dominant), w0=w2=w3=1 */
 +u8 sysctl_cambyses_w0 = 1;
-+u8 sysctl_cambyses_w1 = 3;
++u8 sysctl_cambyses_w1 = 2;
 +u8 sysctl_cambyses_w2 = 1;
 +u8 sysctl_cambyses_w3 = 1;
 +
@@ -372,7 +372,7 @@ index 0000000000..bae8ceab65
 +/*
 + * detach_tasks_cambyses — scored migration selection for Pull path
 + *
-+ * Called from detach_tasks() when sched_cambyses_enabled is active.
++ * Called from detach_tasks() when sched_cambyses is active.
 + * Operates under rq_lock_irqsave (inherited from caller).
 + *
 + * Phase 1: Sample candidates from cfs_tasks, score each one
@@ -595,7 +595,7 @@ index 0000000000..bae8ceab65
 +/* ======== sysctl interface ======== */
 +
 +#ifdef CONFIG_SYSCTL
-+static int sched_cambyses_enabled_handler(const struct ctl_table *table,
++static int sched_cambyses_handler(const struct ctl_table *table,
 +					  int write, void *buffer,
 +					  size_t *lenp, loff_t *ppos)
 +{
@@ -610,27 +610,27 @@ index 0000000000..bae8ceab65
 +	int ret;
 +
 +	if (!write)
-+		sched_cambyses_val = static_key_enabled(&sched_cambyses_enabled);
++		sched_cambyses_val = static_key_enabled(&sched_cambyses);
 +
 +	ret = proc_dou8vec_minmax(&tmp, write, buffer, lenp, ppos);
 +	if (ret || !write)
 +		return ret;
 +
 +	if (sched_cambyses_val)
-+		static_branch_enable(&sched_cambyses_enabled);
++		static_branch_enable(&sched_cambyses);
 +	else
-+		static_branch_disable(&sched_cambyses_enabled);
++		static_branch_disable(&sched_cambyses);
 +
 +	return 0;
 +}
 +
 +static struct ctl_table sched_cambyses_sysctls[] = {
 +	{
-+		.procname	= "sched_cambyses_enabled",
++		.procname	= "sched_cambyses",
 +		.data		= NULL, /* handled by custom handler */
 +		.maxlen		= sizeof(u8),
 +		.mode		= 0644,
-+		.proc_handler	= sched_cambyses_enabled_handler,
++		.proc_handler	= sched_cambyses_handler,
 +	},
 +	{
 +		.procname	= "sched_cambyses_w0",
@@ -679,7 +679,7 @@ index 0000000000..bae8ceab65
 +#endif /* CONFIG_SYSCTL */
 diff --git a/kernel/sched/cambyses.h b/kernel/sched/cambyses.h
 new file mode 100644
-index 0000000000..dd313c8229
+index 0000000000..3c613eced7
 --- /dev/null
 +++ b/kernel/sched/cambyses.h
 @@ -0,0 +1,99 @@
@@ -711,7 +711,7 @@ index 0000000000..dd313c8229
 +};
 +
 +/* Static key for zero-cost runtime disable (NOP patching) */
-+extern struct static_key_false sched_cambyses_enabled;
++extern struct static_key_true sched_cambyses;
 +
 +/* sysctl tunable weights (0–3, 2bit) */
 +extern u8 sysctl_cambyses_w0;	/* cache coldness weight (default: 1) */
@@ -1374,7 +1374,7 @@ index 0000000000..7418e193f2
 +
 +#endif /* CONFIG_SCHED_CAMBYSES */
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 82038166d7..d8ecb0ec2e 100644
+index 82038166d7..851ddd6ef2 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -58,6 +58,11 @@
@@ -1404,7 +1404,7 @@ index 82038166d7..d8ecb0ec2e 100644
  	lockdep_assert_rq_held(env->src_rq);
  
 +#ifdef CONFIG_SCHED_CAMBYSES
-+	if (static_branch_unlikely(&sched_cambyses_enabled))
++	if (static_branch_likely(&sched_cambyses))
 +		return detach_one_task_cambyses(env);
 +#endif
 +
@@ -1416,7 +1416,7 @@ index 82038166d7..d8ecb0ec2e 100644
  		return 0;
  
 +#ifdef CONFIG_SCHED_CAMBYSES
-+	if (static_branch_unlikely(&sched_cambyses_enabled))
++	if (static_branch_likely(&sched_cambyses))
 +		return detach_tasks_cambyses(env);
 +#endif
 +

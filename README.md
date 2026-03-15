@@ -74,7 +74,7 @@ Features are packed in AoS (Array of Structures) layout — 4 bytes per candidat
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `kernel.sched_cambyses_enabled` | 1 | Enable/disable via static key. When set to 0, all Cambyses paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
+| `kernel.sched_cambyses` | 1 | Enable/disable via static key. When set to 0, all Cambyses paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
 | `kernel.sched_cambyses_w0` | 1 | Cache coldness weight (0–3) |
 | `kernel.sched_cambyses_w1` | 3 | Load contribution weight (0–3) |
 | `kernel.sched_cambyses_w2` | 1 | Voluntary switch ratio weight (0–3) |
