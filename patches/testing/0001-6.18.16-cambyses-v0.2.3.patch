@@ -1,20 +1,20 @@
-From 3743aa5a68caceb13d947694bd2addc82f3a5d34 Mon Sep 17 00:00:00 2001
+From a098818c07ec0b562383583faa2c0bb8c3c19e33 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Wed, 18 Mar 2026 00:29:56 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.2.2
+Date: Wed, 18 Mar 2026 02:21:10 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.2.3
 
 ---
  include/linux/sched.h              |  15 +
  init/Kconfig                       |  38 ++
  kernel/sched/Makefile              |  30 ++
- kernel/sched/cambyses.c            | 698 +++++++++++++++++++++++++++++
+ kernel/sched/cambyses.c            | 681 +++++++++++++++++++++++++++++
  kernel/sched/cambyses.h            | 158 +++++++
  kernel/sched/cambyses_simd_avx2.c  |  97 ++++
  kernel/sched/cambyses_simd_neon.c  | 112 +++++
  kernel/sched/cambyses_simd_ssse3.c | 211 +++++++++
  kernel/sched/core.c                |   5 +
  kernel/sched/fair.c                |  34 ++
- 10 files changed, 1398 insertions(+)
+ 10 files changed, 1381 insertions(+)
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
  create mode 100644 kernel/sched/cambyses_simd_avx2.c
@@ -137,10 +137,10 @@ index 8ae86371dd..11e8c835e8 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..1b9c0b05ad
+index 0000000000..f7cf79100b
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
-@@ -0,0 +1,698 @@
+@@ -0,0 +1,681 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -163,7 +163,7 @@ index 0000000000..1b9c0b05ad
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.2.2"
++#define CAMBYSES_VERSION  "0.2.3"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -379,9 +379,10 @@ index 0000000000..1b9c0b05ad
 + *      FPU register cache invalidation).
 + *
 + * ARM64: kernel_neon_begin() BUG_ON's with irqs_disabled(), so we
-+ *        bypass it by driving the FPSIMD save directly.  If
-+ *        TIF_FOREIGN_FPSTATE is already set (common case after context
-+ *        switch), the state is already saved — cost ≈ 0.
++ *        use fpsimd_save_and_flush_cpu_state() which saves the user
++ *        FPSIMD/SVE/SME state and invalidates the CPU's register
++ *        cache.  If TIF_FOREIGN_FPSTATE is already set (common case
++ *        after context switch), the state is already saved — cost ≈ 0.
 + */
 +
 +#ifdef CONFIG_X86_64
@@ -403,25 +404,7 @@ index 0000000000..1b9c0b05ad
 +
 +static __always_inline void cambyses_simd_begin(void)
 +{
-+	if (!(current->flags & PF_KTHREAD) &&
-+	    !test_thread_flag(TIF_FOREIGN_FPSTATE)) {
-+		fpsimd_save_state(&current->thread.uw.fpsimd_state);
-+		set_thread_flag(TIF_FOREIGN_FPSTATE);
-+		/*
-+		 * Invalidate the per-CPU FPSIMD register cache.  Without
-+		 * this, fpsimd_thread_switch() would see
-+		 *   fpsimd_last_state.st == &current->thread.uw.fpsimd_state
-+		 *   && fpsimd_cpu == this_cpu
-+		 * and CLEAR TIF_FOREIGN_FPSTATE — causing
-+		 * fpsimd_restore_current_state() to skip the restore on
-+		 * return to userspace, with NEON-clobbered registers.
-+		 *
-+		 * kernel_neon_begin() does this via fpsimd_flush_cpu_state().
-+		 * We write NULL directly to avoid the full flush (which
-+		 * also handles SME streaming mode, unnecessary here).
-+		 */
-+		__this_cpu_write(fpsimd_last_state.st, NULL);
-+	}
++	fpsimd_save_and_flush_cpu_state();
 +}
 +
 +static __always_inline void cambyses_simd_end(void)
