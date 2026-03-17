@@ -1,20 +1,20 @@
-From e3513bad404f5041aabcadec7de6940367d91925 Mon Sep 17 00:00:00 2001
+From 3743aa5a68caceb13d947694bd2addc82f3a5d34 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Tue, 17 Mar 2026 13:20:56 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.2.1
+Date: Wed, 18 Mar 2026 00:29:56 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.2.2
 
 ---
  include/linux/sched.h              |  15 +
  init/Kconfig                       |  38 ++
  kernel/sched/Makefile              |  30 ++
  kernel/sched/cambyses.c            | 698 +++++++++++++++++++++++++++++
- kernel/sched/cambyses.h            | 147 ++++++
- kernel/sched/cambyses_simd_avx2.c  | 106 +++++
- kernel/sched/cambyses_simd_neon.c  | 118 +++++
- kernel/sched/cambyses_simd_ssse3.c | 217 +++++++++
+ kernel/sched/cambyses.h            | 158 +++++++
+ kernel/sched/cambyses_simd_avx2.c  |  97 ++++
+ kernel/sched/cambyses_simd_neon.c  | 112 +++++
+ kernel/sched/cambyses_simd_ssse3.c | 211 +++++++++
  kernel/sched/core.c                |   5 +
  kernel/sched/fair.c                |  34 ++
- 10 files changed, 1408 insertions(+)
+ 10 files changed, 1398 insertions(+)
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
  create mode 100644 kernel/sched/cambyses_simd_avx2.c
@@ -137,7 +137,7 @@ index 8ae86371dd..11e8c835e8 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..531af17a2e
+index 0000000000..1b9c0b05ad
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,698 @@
@@ -163,7 +163,7 @@ index 0000000000..531af17a2e
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.2.1"
++#define CAMBYSES_VERSION  "0.2.2"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -293,7 +293,7 @@ index 0000000000..531af17a2e
 + *   F2: vol switch ratio     — nvcsw/(nvcsw+nivcsw) × 64 (higher = I/O-bound = cheaper)
 + *   F3: wakee penalty        — log2p1(wakee_flips + 1) (higher = riskier)
 + *
-+ * Score range: max ~2295, min ~-765 → fits in s16.
++ * Score range: max ~1746, min ~-777 → fits in s16.
 + */
 +static s16 score_task_cambyses(struct task_struct *p, struct lb_env *env)
 +{
@@ -567,7 +567,7 @@ index 0000000000..531af17a2e
 +	 * Scalar fallback: branchless CMP+CMOV loop, ~20 cycles / extraction.
 +	 *
 +	 * S16_MIN (-32768) is used as a tombstone: real scores range
-+	 * from -765 to +2295, so it can never be a valid score.
++	 * from -777 to +1746, so it can never be a valid score.
 +	 */
 +#ifdef CONFIG_SCHED_CAMBYSES_SIMD
 +	if (nr_cands >= CAMBYSES_SIMD_THRESHOLD) {
@@ -841,10 +841,10 @@ index 0000000000..531af17a2e
 +#endif /* CONFIG_SYSCTL */
 diff --git a/kernel/sched/cambyses.h b/kernel/sched/cambyses.h
 new file mode 100644
-index 0000000000..c45378b011
+index 0000000000..d6a0f01c79
 --- /dev/null
 +++ b/kernel/sched/cambyses.h
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,158 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -893,45 +893,34 @@ index 0000000000..c45378b011
 + * SIMD argmax — separate TUs to prevent auto-vectorization contamination.
 + * Each file is compiled with its own ISA flags.
 + *
-+ * Finds the index of the maximum s16 score across
-+ * CAMBYSES_SIMD_SCORES_SIZE entries.  Unused entries must be S16_MIN.
-+ * No alignment requirement — loads are unaligned-safe.
-+ *
-+ * CAMBYSES_SIMD_SCORES_SIZE rounds SCHED_NR_MIGRATE_BREAK up to the
-+ * nearest SIMD-friendly boundary (8, 16, or 32) so that every load
-+ * stays within the array.  Extra slots are padded with S16_MIN.
++ * Three size variants per ISA (8, 16, 32 entries) are exported
++ * unconditionally.  SIMD TUs cannot include sched.h (auto-vectorization
++ * contamination), so they have no access to SCHED_NR_MIGRATE_BREAK.
++ * Instead, cambyses.c (which includes sched.h) selects the correct
++ * variant at compile time via dispatch macros below.
 + *
 + * x86 uses PHMINPOSUW (SSE4.1) for O(1) horizontal argmax per XMM:
 + *   XOR 0x7FFF converts s16-max to u16-min, PHMINPOSUW returns both
 + *   the minimum value and its lane index in one instruction.
 + *   AVX2 always has SSE4.1; SSSE3 path uses it when detected at boot.
 + *
-+ * Register usage (compile-time, zero runtime overhead):
-+ *   scores_size 32: 4 xmm loads → 4 PHMINPOSUW + 3 comparisons
-+ *   scores_size 16: 2 xmm loads → 2 PHMINPOSUW + 1 comparison
-+ *   scores_size  8: 1 xmm load  → 1 PHMINPOSUW (direct result)
++ * Register usage per variant:
++ *   _32: 4 xmm loads → 4 PHMINPOSUW + 3 comparisons
++ *   _16: 2 xmm loads → 2 PHMINPOSUW + 1 comparison
++ *    _8: 1 xmm load  → 1 PHMINPOSUW (direct result)
 + */
 +#ifdef CONFIG_SCHED_CAMBYSES_SIMD
 +
 +/*
 + * Scores array size for SIMD argmax — rounded up from
 + * SCHED_NR_MIGRATE_BREAK to the next SIMD-friendly boundary.
-+ * This ensures every XMM/YMM/Q load stays within bounds.
++ * This ensures every XMM/Q load stays within bounds.
 + *
-+ * SCHED_NR_MIGRATE_BREAK is defined in sched.h which cannot be
-+ * included from SIMD TUs (they are compiled with ISA-specific flags
-+ * and sched.h would pull in code subject to auto-vectorization).
-+ *
-+ * Mirror the definition here with a guard so it's a no-op when
-+ * sched.h has already been included (via fair.c → cambyses.c).
++ * SCHED_NR_MIGRATE_BREAK is defined in sched.h, which SIMD TUs
++ * cannot include.  Guard with #ifdef so SIMD TUs compile cleanly;
++ * they see only the raw _8/_16/_32 declarations below.
 + */
-+#ifndef SCHED_NR_MIGRATE_BREAK
-+#ifdef CONFIG_PREEMPT_RT
-+# define SCHED_NR_MIGRATE_BREAK 8
-+#else
-+# define SCHED_NR_MIGRATE_BREAK 32
-+#endif
-+#endif
++#ifdef SCHED_NR_MIGRATE_BREAK
 +#if SCHED_NR_MIGRATE_BREAK <= 8
 +#define CAMBYSES_SIMD_SCORES_SIZE	8
 +#elif SCHED_NR_MIGRATE_BREAK <= 16
@@ -947,6 +936,7 @@ index 0000000000..c45378b011
 + * Must be <= SCHED_NR_MIGRATE_BREAK.
 + */
 +#define CAMBYSES_SIMD_THRESHOLD		min_t(int, 8, SCHED_NR_MIGRATE_BREAK)
++#endif /* SCHED_NR_MIGRATE_BREAK */
 +
 +/* Static keys for ISA dispatch — enabled at boot based on CPUID/HWCAP */
 +#ifdef CONFIG_X86_64
@@ -958,14 +948,35 @@ index 0000000000..c45378b011
 +extern struct static_key_false cambyses_has_neon;
 +#endif
 +
++/* Size-specific SIMD argmax — all variants always compiled */
 +#ifdef CONFIG_X86_64
-+int cambyses_simd_argmax_avx2(const s16 *scores);
-+int cambyses_simd_argmax_ssse3(const s16 *scores);
++int cambyses_simd_argmax_avx2_8(const s16 *scores);
++int cambyses_simd_argmax_avx2_16(const s16 *scores);
++int cambyses_simd_argmax_avx2_32(const s16 *scores);
++int cambyses_simd_argmax_ssse3_8(const s16 *scores);
++int cambyses_simd_argmax_ssse3_16(const s16 *scores);
++int cambyses_simd_argmax_ssse3_32(const s16 *scores);
 +#endif
 +
 +#ifdef CONFIG_ARM64
-+int cambyses_simd_argmax_neon(const s16 *scores);
++int cambyses_simd_argmax_neon_8(const s16 *scores);
++int cambyses_simd_argmax_neon_16(const s16 *scores);
++int cambyses_simd_argmax_neon_32(const s16 *scores);
 +#endif
++
++/*
++ * Compile-time dispatch — maps generic name to the size-correct variant
++ * via token pasting (e.g. _avx2 → _avx2_8 when SCORES_SIZE == 8).
++ * Only available when SCHED_NR_MIGRATE_BREAK is known (i.e. in cambyses.c
++ * via fair.c / sched.h).  SIMD TUs never see these macros.
++ */
++#ifdef CAMBYSES_SIMD_SCORES_SIZE
++#define _CAMBYSES_PASTE(fn, sz)		fn##sz
++#define _CAMBYSES_DISPATCH(fn, sz)	_CAMBYSES_PASTE(fn, sz)
++#define cambyses_simd_argmax_avx2(s)	_CAMBYSES_DISPATCH(cambyses_simd_argmax_avx2_, CAMBYSES_SIMD_SCORES_SIZE)(s)
++#define cambyses_simd_argmax_ssse3(s)	_CAMBYSES_DISPATCH(cambyses_simd_argmax_ssse3_, CAMBYSES_SIMD_SCORES_SIZE)(s)
++#define cambyses_simd_argmax_neon(s)	_CAMBYSES_DISPATCH(cambyses_simd_argmax_neon_, CAMBYSES_SIMD_SCORES_SIZE)(s)
++#endif /* CAMBYSES_SIMD_SCORES_SIZE */
 +
 +/*
 + * x86 SIMD vector type definitions — only available in TUs compiled
@@ -994,10 +1005,10 @@ index 0000000000..c45378b011
 +#endif /* _KERNEL_SCHED_CAMBYSES_H */
 diff --git a/kernel/sched/cambyses_simd_avx2.c b/kernel/sched/cambyses_simd_avx2.c
 new file mode 100644
-index 0000000000..6c81832052
+index 0000000000..2c6611e8d7
 --- /dev/null
 +++ b/kernel/sched/cambyses_simd_avx2.c
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,97 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * cambyses_simd_avx2.c — AVX2 argmax for Cambyses
@@ -1021,8 +1032,8 @@ index 0000000000..6c81832052
 +
 +/*
 + * XOR mask: s16 max → u16 min conversion for PHMINPOSUW.
-+ *   score 2295  (0x08F7) → 0x7708 (low u16 → selected)
-+ *   score -765  (0xFD03) → 0x82FC
++ *   score 1746  (0x06D2) → 0x792D (low u16 → selected)
++ *   score -777  (0xFCF7) → 0x8308
 + *   S16_MIN     (0x8000) → 0xFFFF (max u16 → never selected)
 + */
 +static const v8hi phminpos_xor = {
@@ -1042,23 +1053,33 @@ index 0000000000..6c81832052
 +	return (unsigned short)r[1];
 +}
 +
-+/*
-+ * SIMD argmax: find index of highest s16 score using AVX2.
-+ *
-+ * PHMINPOSUW is a 128-bit instruction, so we load XMMs directly
-+ * and run PHMINPOSUW on each, then compare the results.
-+ *
-+ * Register usage adapts to CAMBYSES_SIMD_SCORES_SIZE at compile time:
-+ *   32: 4 xmm loads → 4 PHMINPOSUW → 3 scalar comparisons
-+ *   16: 2 xmm loads → 2 PHMINPOSUW → 1 scalar comparison
-+ *    8: 1 xmm load  → 1 PHMINPOSUW (direct result)
-+ *
-+ * @scores: array of CAMBYSES_SIMD_SCORES_SIZE s16 values.
-+ *          Unused entries must be S16_MIN.
-+ */
-+int cambyses_simd_argmax_avx2(const s16 *scores)
++/* 8 entries — 1 PHMINPOSUW (direct result) */
++int cambyses_simd_argmax_avx2_8(const s16 *scores)
 +{
-+#if CAMBYSES_SIMD_SCORES_SIZE >= 32
++	return argmax_xmm(*(const v8hi_u *)&scores[0]);
++}
++
++/* 16 entries — 2 PHMINPOSUW + 1 scalar comparison */
++int cambyses_simd_argmax_avx2_16(const s16 *scores)
++{
++	v8hi r0, r1;
++	u16 v0, v1;
++
++	r0 = (v8hi)__builtin_ia32_phminposuw128(
++		*(const v8hi_u *)&scores[0] ^ phminpos_xor);
++	r1 = (v8hi)__builtin_ia32_phminposuw128(
++		*(const v8hi_u *)&scores[8] ^ phminpos_xor);
++
++	v0 = (u16)r0[0]; v1 = (u16)r1[0];
++
++	if (v0 <= v1)
++		return (u16)r0[1];
++	return 8 + (u16)r1[1];
++}
++
++/* 32 entries — 4 PHMINPOSUW + 3 scalar comparisons */
++int cambyses_simd_argmax_avx2_32(const s16 *scores)
++{
 +	v8hi r0, r1, r2, r3;
 +	u16 v0, v1, v2, v3;
 +
@@ -1082,34 +1103,15 @@ index 0000000000..6c81832052
 +	if (v2 <= v3)
 +		return 16 + (u16)r2[1];
 +	return 24 + (u16)r3[1];
-+
-+#elif CAMBYSES_SIMD_SCORES_SIZE >= 16
-+	v8hi r0, r1;
-+	u16 v0, v1;
-+
-+	r0 = (v8hi)__builtin_ia32_phminposuw128(
-+		*(const v8hi_u *)&scores[0] ^ phminpos_xor);
-+	r1 = (v8hi)__builtin_ia32_phminposuw128(
-+		*(const v8hi_u *)&scores[8] ^ phminpos_xor);
-+
-+	v0 = (u16)r0[0]; v1 = (u16)r1[0];
-+
-+	if (v0 <= v1)
-+		return (u16)r0[1];
-+	return 8 + (u16)r1[1];
-+
-+#else /* CAMBYSES_SIMD_SCORES_SIZE == 8 */
-+	return argmax_xmm(*(const v8hi_u *)&scores[0]);
-+#endif
 +}
 +
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
 diff --git a/kernel/sched/cambyses_simd_neon.c b/kernel/sched/cambyses_simd_neon.c
 new file mode 100644
-index 0000000000..a1bfdf77f1
+index 0000000000..c273e95250
 --- /dev/null
 +++ b/kernel/sched/cambyses_simd_neon.c
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,112 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * cambyses_simd_neon.c — NEON argmax for Cambyses
@@ -1131,22 +1133,60 @@ index 0000000000..a1bfdf77f1
 +
 +#include <asm/neon-intrinsics.h>
 +
-+/*
-+ * SIMD argmax: find index of highest s16 score using NEON.
-+ *
-+ * Register usage adapts to CAMBYSES_SIMD_SCORES_SIZE at compile time:
-+ *   32: 4 Q register loads, 3-stage vmaxq reduction
-+ *   16: 2 Q register loads, 1-stage reduction
-+ *    8: 1 Q register load, direct SMAXV
-+ *
-+ * @scores: array of CAMBYSES_SIMD_SCORES_SIZE s16 values.
-+ *          Unused entries must be S16_MIN (0x8000).
-+ */
-+int cambyses_simd_argmax_neon(const s16 *scores)
-+{
-+	static const uint16x8_t pos_weights = {1, 2, 4, 8, 16, 32, 64, 128};
++static const uint16x8_t pos_weights = {1, 2, 4, 8, 16, 32, 64, 128};
 +
-+#if CAMBYSES_SIMD_SCORES_SIZE >= 32
++/* 8 entries — 1 Q register load, direct SMAXV */
++int cambyses_simd_argmax_neon_8(const s16 *scores)
++{
++	int16x8_t s0;
++	int16_t max_val;
++	int16x8_t bcast;
++	uint16x8_t c0;
++	uint16_t bits0;
++
++	s0 = vld1q_s16(&scores[0]);
++
++	max_val = vmaxvq_s16(s0);
++	bcast = vdupq_n_s16(max_val);
++
++	c0 = vceqq_s16(s0, bcast);
++	bits0 = vaddvq_u16(vandq_u16(c0, pos_weights));
++
++	return __builtin_ctz(bits0);
++}
++
++/* 16 entries — 2 Q register loads, 1-stage reduction */
++int cambyses_simd_argmax_neon_16(const s16 *scores)
++{
++	int16x8_t s0, s1, m;
++	int16_t max_val;
++	int16x8_t bcast;
++	uint16x8_t c0, c1;
++	uint16_t bits0, bits1;
++	uint32_t combined;
++
++	s0 = vld1q_s16(&scores[0]);
++	s1 = vld1q_s16(&scores[8]);
++
++	m = vmaxq_s16(s0, s1);
++
++	max_val = vmaxvq_s16(m);
++	bcast = vdupq_n_s16(max_val);
++
++	c0 = vceqq_s16(s0, bcast);
++	c1 = vceqq_s16(s1, bcast);
++
++	bits0 = vaddvq_u16(vandq_u16(c0, pos_weights));
++	bits1 = vaddvq_u16(vandq_u16(c1, pos_weights));
++
++	combined = (uint32_t)bits0 | ((uint32_t)bits1 << 8);
++
++	return __builtin_ctz(combined);
++}
++
++/* 32 entries — 4 Q register loads, 3-stage vmaxq reduction */
++int cambyses_simd_argmax_neon_32(const s16 *scores)
++{
 +	int16x8_t s0, s1, s2, s3;
 +	int16x8_t m01, m23, m;
 +	int16_t max_val;
@@ -1181,59 +1221,15 @@ index 0000000000..a1bfdf77f1
 +		 | ((uint32_t)bits2 << 16) | ((uint32_t)bits3 << 24);
 +
 +	return __builtin_ctz(combined);
-+
-+#elif CAMBYSES_SIMD_SCORES_SIZE >= 16
-+	int16x8_t s0, s1, m;
-+	int16_t max_val;
-+	int16x8_t bcast;
-+	uint16x8_t c0, c1;
-+	uint16_t bits0, bits1;
-+	uint32_t combined;
-+
-+	s0 = vld1q_s16(&scores[0]);
-+	s1 = vld1q_s16(&scores[8]);
-+
-+	m = vmaxq_s16(s0, s1);
-+
-+	max_val = vmaxvq_s16(m);
-+	bcast = vdupq_n_s16(max_val);
-+
-+	c0 = vceqq_s16(s0, bcast);
-+	c1 = vceqq_s16(s1, bcast);
-+
-+	bits0 = vaddvq_u16(vandq_u16(c0, pos_weights));
-+	bits1 = vaddvq_u16(vandq_u16(c1, pos_weights));
-+
-+	combined = (uint32_t)bits0 | ((uint32_t)bits1 << 8);
-+
-+	return __builtin_ctz(combined);
-+
-+#else /* CAMBYSES_SIMD_SCORES_SIZE == 8 */
-+	int16x8_t s0;
-+	int16_t max_val;
-+	int16x8_t bcast;
-+	uint16x8_t c0;
-+	uint16_t bits0;
-+
-+	s0 = vld1q_s16(&scores[0]);
-+
-+	max_val = vmaxvq_s16(s0);
-+	bcast = vdupq_n_s16(max_val);
-+
-+	c0 = vceqq_s16(s0, bcast);
-+	bits0 = vaddvq_u16(vandq_u16(c0, pos_weights));
-+
-+	return __builtin_ctz(bits0);
-+#endif
 +}
 +
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
 diff --git a/kernel/sched/cambyses_simd_ssse3.c b/kernel/sched/cambyses_simd_ssse3.c
 new file mode 100644
-index 0000000000..924fa23dea
+index 0000000000..0b95ca27f7
 --- /dev/null
 +++ b/kernel/sched/cambyses_simd_ssse3.c
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,211 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * cambyses_simd_ssse3.c — SSSE3 argmax for Cambyses
@@ -1299,23 +1295,89 @@ index 0000000000..924fa23dea
 +	0x7FFF, 0x7FFF, 0x7FFF, 0x7FFF
 +};
 +
-+/*
-+ * SIMD argmax: find index of highest s16 score.
-+ *
-+ * Two paths selected at runtime via static branch:
-+ *
-+ * SSE4.1 (PHMINPOSUW): XOR + PHMINPOSUW per XMM, then scalar
-+ *   comparison across groups.  ~3 ops for 8 entries.
-+ *
-+ * SSSE3 fallback: PMAXSW reduction → scalar horizontal max →
-+ *   broadcast PCMPEQW → PMOVMSKB + BSF.  ~12 ops for 8 entries.
-+ *
-+ * @scores: array of CAMBYSES_SIMD_SCORES_SIZE s16 values.
-+ *          Unused entries must be S16_MIN.
-+ */
-+int cambyses_simd_argmax_ssse3(const s16 *scores)
++/* ---- 8-entry variant ---- */
++
++int cambyses_simd_argmax_ssse3_8(const s16 *scores)
 +{
-+#if CAMBYSES_SIMD_SCORES_SIZE >= 32
++	v8hi s0;
++
++	s0 = *(const v8hi_u *)&scores[0];
++
++	if (static_branch_likely(&cambyses_has_sse41)) {
++		v8hi r = __phminposuw128(s0 ^ phminpos_xor);
++
++		return (u16)r[1];
++	} else {
++		v8hi bcast, c0;
++		int j, mask0;
++		s16 max_val;
++
++		max_val = s0[0];
++		for (j = 1; j < 8; j++)
++			if (s0[j] > max_val)
++				max_val = s0[j];
++
++		bcast = (v8hi){max_val, max_val, max_val, max_val,
++			       max_val, max_val, max_val, max_val};
++
++		c0 = (s0 == bcast);
++		mask0 = __pmovmskb128((v16qi)c0);
++
++		return __builtin_ctz(mask0) >> 1;
++	}
++}
++
++/* ---- 16-entry variant ---- */
++
++int cambyses_simd_argmax_ssse3_16(const s16 *scores)
++{
++	v8hi s0, s1;
++
++	s0 = *(const v8hi_u *)&scores[0];
++	s1 = *(const v8hi_u *)&scores[8];
++
++	if (static_branch_likely(&cambyses_has_sse41)) {
++		v8hi r0, r1;
++		u16 v0, v1;
++
++		r0 = __phminposuw128(s0 ^ phminpos_xor);
++		r1 = __phminposuw128(s1 ^ phminpos_xor);
++
++		v0 = (u16)r0[0]; v1 = (u16)r1[0];
++
++		if (v0 <= v1)
++			return (u16)r0[1];
++		return 8 + (u16)r1[1];
++	} else {
++		v8hi m, bcast, c0, c1;
++		int j, mask0, mask1;
++		s16 max_val;
++
++		m = __pmaxsw128(s0, s1);
++
++		max_val = m[0];
++		for (j = 1; j < 8; j++)
++			if (m[j] > max_val)
++				max_val = m[j];
++
++		bcast = (v8hi){max_val, max_val, max_val, max_val,
++			       max_val, max_val, max_val, max_val};
++
++		c0 = (s0 == bcast);
++		c1 = (s1 == bcast);
++		mask0 = __pmovmskb128((v16qi)c0);
++		mask1 = __pmovmskb128((v16qi)c1);
++
++		if (mask0)
++			return __builtin_ctz(mask0) >> 1;
++		return 8 + (__builtin_ctz(mask1) >> 1);
++	}
++}
++
++/* ---- 32-entry variant ---- */
++
++int cambyses_simd_argmax_ssse3_32(const s16 *scores)
++{
 +	v8hi s0, s1, s2, s3;
 +
 +	s0 = *(const v8hi_u *)&scores[0];
@@ -1376,78 +1438,6 @@ index 0000000000..924fa23dea
 +			return 16 + (__builtin_ctz(mask2) >> 1);
 +		return 24 + (__builtin_ctz(mask3) >> 1);
 +	}
-+
-+#elif CAMBYSES_SIMD_SCORES_SIZE >= 16
-+	v8hi s0, s1;
-+
-+	s0 = *(const v8hi_u *)&scores[0];
-+	s1 = *(const v8hi_u *)&scores[8];
-+
-+	if (static_branch_likely(&cambyses_has_sse41)) {
-+		v8hi r0, r1;
-+		u16 v0, v1;
-+
-+		r0 = __phminposuw128(s0 ^ phminpos_xor);
-+		r1 = __phminposuw128(s1 ^ phminpos_xor);
-+
-+		v0 = (u16)r0[0]; v1 = (u16)r1[0];
-+
-+		if (v0 <= v1)
-+			return (u16)r0[1];
-+		return 8 + (u16)r1[1];
-+	} else {
-+		v8hi m, bcast, c0, c1;
-+		int j, mask0, mask1;
-+		s16 max_val;
-+
-+		m = __pmaxsw128(s0, s1);
-+
-+		max_val = m[0];
-+		for (j = 1; j < 8; j++)
-+			if (m[j] > max_val)
-+				max_val = m[j];
-+
-+		bcast = (v8hi){max_val, max_val, max_val, max_val,
-+			       max_val, max_val, max_val, max_val};
-+
-+		c0 = (s0 == bcast);
-+		c1 = (s1 == bcast);
-+		mask0 = __pmovmskb128((v16qi)c0);
-+		mask1 = __pmovmskb128((v16qi)c1);
-+
-+		if (mask0)
-+			return __builtin_ctz(mask0) >> 1;
-+		return 8 + (__builtin_ctz(mask1) >> 1);
-+	}
-+
-+#else /* CAMBYSES_SIMD_SCORES_SIZE == 8 */
-+	v8hi s0;
-+
-+	s0 = *(const v8hi_u *)&scores[0];
-+
-+	if (static_branch_likely(&cambyses_has_sse41)) {
-+		v8hi r = __phminposuw128(s0 ^ phminpos_xor);
-+
-+		return (u16)r[1];
-+	} else {
-+		v8hi bcast, c0;
-+		int j, mask0;
-+		s16 max_val;
-+
-+		max_val = s0[0];
-+		for (j = 1; j < 8; j++)
-+			if (s0[j] > max_val)
-+				max_val = s0[j];
-+
-+		bcast = (v8hi){max_val, max_val, max_val, max_val,
-+			       max_val, max_val, max_val, max_val};
-+
-+		c0 = (s0 == bcast);
-+		mask0 = __pmovmskb128((v16qi)c0);
-+
-+		return __builtin_ctz(mask0) >> 1;
-+	}
-+#endif
 +}
 +
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
