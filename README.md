@@ -27,18 +27,18 @@ All Cambyses paths run under the existing `rq_lock_irqsave` — no additional lo
 
 Phase 2 extracts the best candidate via O(N) argmax scan instead of establishing total order over all candidates. Since typically only K=1..4 tasks are detached per balance run, full sorting (O(N log²N)) would waste work on the remaining candidates. Repeated argmax extraction costs O(K×N) — for K=3, N=32 this is ~186 micro-ops vs ~588+ for a sort network.
 
-The scalar argmax compiles to branchless CMP+CMOV (no branch mispredictions), and the 64-byte `s16 scores[]` array stays L1-hot across extractions. Consumed candidates are marked with `S16_MIN` (-32768), which can never be a valid score (real range: -765 to +2295).
+The scalar argmax compiles to branchless CMP+CMOV (no branch mispredictions), and the 64-byte `s16 scores[]` array stays L1-hot across extractions. Consumed candidates are marked with `S16_MIN` (-32768), which can never be a valid score (real range: -777 to +1746).
 
 ### SIMD argmax acceleration
 
-When `CONFIG_SCHED_CAMBYSES_SIMD` is enabled and 8+ candidates are available, Phase 2 uses SIMD instructions to find the highest-scored candidate. The 32-entry `s16 scores[]` array is loaded into SIMD registers and reduced via lane-wise max + broadcast compare + bitmask extraction:
+When `CONFIG_SCHED_CAMBYSES_SIMD` is enabled and 8+ candidates are available, Phase 2 uses SIMD instructions to find the highest-scored candidate. The 32-entry `s16 scores[]` array is loaded into SIMD registers and reduced to the argmax index in a single pass:
 
 | ISA | Registers | Algorithm | Ops | Cycles | ns @ 5 GHz |
 |-----|-----------|-----------|-----|--------|------------|
 | Scalar | — | CMP+CMOV loop (N entries) | N×2 | N=10: ~20, N=24: ~48 | ~4–10 |
-| AVX2 | 2 ymm (32 scores) | VPMAXSW → scalar hmax → VPCMPEQW → VPMOVMSKB → BSF | ~16 SIMD + ~15 scalar | ~10 | ~2 |
-| SSSE3 | 4 xmm (32 scores) | PMAXSW → scalar hmax → PCMPEQW → PMOVMSKB → BSF | ~24 SIMD + ~7 scalar | ~14 | ~3 |
-| NEON | 4 Q regs (32 scores) | SMAXP → SMAXV → CMEQ → positional weight bitmask → CTZ | ~20 | ~12 | ~2 |
+| AVX2 / SSE4.1 | 4 xmm (32 scores) | XOR 0x7FFF → 4× PHMINPOSUW → 3 scalar CMP | ~15 | ~10 | ~2 |
+| SSSE3 (no SSE4.1) | 4 xmm (32 scores) | PMAXSW → scalar hmax → PCMPEQW → PMOVMSKB → BSF | ~24 SIMD + ~7 scalar | ~14 | ~3 |
+| NEON | 4 Q regs (32 scores) | VMAXQ → SMAXV → CMEQ → positional weight bitmask → CTZ | ~20 | ~12 | ~2 |
 
 The FPU context cost is near-zero in the common scheduler path: `cambyses_simd_begin()` checks `TIF_NEED_FPU_LOAD` (x86) / `TIF_FOREIGN_FPSTATE` (ARM64), which is typically already set after a context switch, making the save a no-op. Falls back to scalar argmax when candidate count is below `CAMBYSES_SIMD_THRESHOLD` (8) or CPU lacks support.
 
@@ -105,7 +105,7 @@ Score formula: `score = w0*F0 + w1*F1 + w2*F2 - w3*F3`
 
 Default weights (`w0=1, w1=2, w2=1, w3=1`) make load contribution the dominant factor — migrating one heavy task is more efficient than multiple light tasks in terms of migration count, lock contention, and IPIs. Cache coldness acts as a secondary selector among tasks of similar load, while voluntary switch ratio and wakee penalty serve as tiebreakers.
 
-Score range fits in `s16`: max +2295, min -765 with maximum weights.
+Score range fits in `s16`: max +1746, min -777 with maximum weights. F0/F1/F3 theoretical max is 259 (`log2p1_u64_u8fp2` of `U64_MAX`), F2 max is 64 (clamped). With all weights at 3: max = 3×259 + 3×259 + 3×64 = 1746, min = −3×259 = −777.
 
 ## Configuration
 
@@ -151,7 +151,7 @@ Instruction-level analysis at 5 GHz (0.2 ns/cycle):
 | Phase 1: Scan + Score | ~106 cyc | ~548 cyc | ~548 cyc | ~548 cyc | ~548 cyc |
 | Phase 2: Selection | — | ~60 cyc (3×20) | ~30 cyc (3×10) | ~42 cyc (3×14) | ~36 cyc (3×12) |
 | Detach | ~99 cyc | ~99 cyc | ~99 cyc | ~99 cyc | ~99 cyc |
-| **Total** | **~205 cyc / ~41 ns** | **~707 cyc / ~141 ns** | **~685 cyc / ~137 ns** | **~697 cyc / ~139 ns** | **~691 cyc / ~138 ns** |
+| **Total** | **~205 cyc / ~41 ns** | **~707 cyc / ~141 ns** | **~677 cyc / ~135 ns** | **~689 cyc / ~138 ns** | **~683 cyc / ~137 ns** |
 
 #### Worst case (32 tasks scanned, N=24 candidates, K=8 detached)
 
@@ -160,7 +160,7 @@ Instruction-level analysis at 5 GHz (0.2 ns/cycle):
 | Phase 1: Scan + Score | ~206 cyc | ~1168 cyc | ~1168 cyc | ~1168 cyc | ~1168 cyc |
 | Phase 2: Selection | — | ~384 cyc (8×48) | ~80 cyc (8×10) | ~112 cyc (8×14) | ~96 cyc (8×12) |
 | Detach | ~264 cyc | ~264 cyc | ~264 cyc | ~264 cyc | ~264 cyc |
-| **Total** | **~470 cyc / ~94 ns** | **~1816 cyc / ~363 ns** | **~1516 cyc / ~303 ns** | **~1548 cyc / ~310 ns** | **~1532 cyc / ~306 ns** |
+| **Total** | **~470 cyc / ~94 ns** | **~1816 cyc / ~363 ns** | **~1512 cyc / ~302 ns** | **~1544 cyc / ~309 ns** | **~1528 cyc / ~306 ns** |
 
 ### Why the overhead pays for itself
 
@@ -176,7 +176,7 @@ Vanilla uses FIFO — it stops scanning as soon as imbalance is consumed, giving
 
 ### Additional observations
 
-- **Phase 1 dominates (75-85%)**: The argmax extraction in Phase 2 is negligible (~30 cycles for K=3 with AVX2). The overwhelming cost is Phase 1's full scan of the runqueue.
+- **Phase 1 dominates (65-85%)**: The argmax extraction in Phase 2 is negligible (~30 cycles for K=3 with AVX2). The overwhelming cost is Phase 1's full scan of the runqueue. The lower bound (65%) occurs in worst-case scalar (K=8, N=24); SIMD paths stay in the 75-85% range.
 - **SIMD scales with K**: Scalar argmax cost is O(K×N) — both extraction count and candidate count increase cost. SIMD argmax is O(K) with fixed ~10–14 cycles per extraction regardless of N. At K=8, AVX2 reduces Phase 2 from ~384 to ~80 cycles (79%), SSSE3 to ~112 (71%), NEON to ~96 (75%).
 - **Prefetch closes the gap**: 1-ahead software prefetch brings per-task cost within ~8% of vanilla, despite computing 4-feature scores. On in-order CPUs, prefetch provides 60-67% cycle reduction.
 
@@ -193,7 +193,7 @@ Without prefetch, each of the 3 loads per task serializes into sequential DRAM a
 
 ### Stack Usage
 
-320 bytes: 256 bytes for 32 `cambyses_candidate` structs (8 bytes each: pointer only) + 64 bytes for `s16 scores[32]`. Well within the typical 16KB kernel stack.
+320–448 bytes: 256 bytes for 32 `cambyses_candidate` structs (8 bytes each: pointer only) + 64 bytes for `s16 scores[32]` + 128 bytes for `int selected[32]` (SIMD path only). Well within the typical 16KB kernel stack.
 
 ## File Layout
 
