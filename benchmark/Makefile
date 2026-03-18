@@ -1,12 +1,12 @@
 CFLAGS := -O2 -Wall -Wextra -std=gnu11 -pthread
 LDFLAGS := -lm
 
-all: asymmetric_drain
+all: response_lat
 
-asymmetric_drain: asymmetric_drain.c
+response_lat: response_lat.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 clean:
-	rm -f asymmetric_drain
+	rm -f response_lat
 
 .PHONY: all clean

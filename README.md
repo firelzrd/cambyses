@@ -84,7 +84,7 @@ With Score Shadow, only 3 prefetch targets are needed per candidate:
 
 ```c
 prefetch(&next->se.exec_start);      /* F0 + F2/F3 (same cache line) */
-prefetch(&next->se.avg.load_avg);    /* F1 */
+prefetch(&next->se.avg.util_avg);    /* F1 */
 prefetch(&next->cpus_ptr);           /* can_migrate_task() */
 ```
 
@@ -95,7 +95,7 @@ Four features are extracted per candidate and combined into a weighted linear sc
 | Feature | Computation | Meaning | Typical range |
 |---------|-------------|---------|---------------|
 | F0: cache_coldness | `log2p1(rq_clock_task - exec_start)` | Time since last execution — colder cache means lower migration cost | 40–130 |
-| F1: load_contribution | `log2p1(task_h_load(p))` | Hierarchical load weight — heavier tasks resolve imbalance more efficiently | 0–66 |
+| F1: cpu_lightness | `log2p1(1025 - min(util_avg, 1024))` | Inverted PELT utilisation — CPU-bound tasks score ≈0, sleep/wake tasks score high | 0–40 |
 | F2: vol_switch_ratio | `log2p1(nvcsw) - log2p1(total) + 64` | Voluntary context switch ratio — I/O-bound tasks have transient cache footprint, cheaper to migrate | 0–64 |
 | F3: wakee_penalty | `log2p1(wakee_flips + 1)` | Wakee relationship complexity — frequent wakee switches indicate migration risk | 0–26 |
 
@@ -103,9 +103,13 @@ F0, F1, and F3 are compressed via `log2p1_u64_u8fp2()` — a fixed-point log2 wi
 
 Score formula: `score = w0*F0 + w1*F1 + w2*F2 - w3*F3`
 
-Default weights (`w0=1, w1=2, w2=1, w3=1`) make load contribution the dominant factor — migrating one heavy task is more efficient than multiple light tasks in terms of migration count, lock contention, and IPIs. Cache coldness acts as a secondary selector among tasks of similar load, while voluntary switch ratio and wakee penalty serve as tiebreakers.
+F0, F1, and F2 all point in the same direction: prefer migrating lightweight, cache-cold, sleep/wake tasks. F3 is the sole brake. This coherence ensures that CPU-bound tasks (low F0, low F1, low F2) and communication-hub tasks (high F3) are protected from migration, while sleep/wake tasks (high F0, high F1, high F2) are preferentially selected as migration candidates.
 
-Score range fits in `s16`: max +1746, min -777 with maximum weights. F0/F1/F3 theoretical max is 259 (`log2p1_u64_u8fp2` of `U64_MAX`), F2 max is 64 (clamped). With all weights at 3: max = 3×259 + 3×259 + 3×64 = 1746, min = −3×259 = −777.
+F1 uses inverted PELT `util_avg` rather than static task weight. `util_avg` tracks historical CPU utilisation and decays when the task sleeps, so a latency-sensitive task with a 5% duty cycle gets F1 ≈ 40 regardless of its nice value, while a CPU-bound task spinning at 100% gets F1 ≈ 0. This is intentional: the goal is to migrate tasks that are cheap to move, and a sleeping task's cache footprint is already gone.
+
+Default weights (`w0=w1=w2=w3=1`) treat all three migration-friendly signals equally. F3 acts as a symmetric brake.
+
+Score range fits in `s16`: max +292, min −78 with default weights. F0 max ≈130, F1 max ≈40, F2 max = 64, F3 max ≈26. With all weights at 3: max = 3×130 + 3×40 + 3×64 = 702, min = −3×26 = −78.
 
 ## Configuration
 
@@ -122,7 +126,7 @@ Score range fits in `s16`: max +1746, min -777 with maximum weights. F0/F1/F3 th
 |-----------|---------|-------------|
 | `kernel.sched_cambyses` | 1 | Enable/disable via static key. When set to 0, all Cambyses paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
 | `kernel.sched_cambyses_w0` | 1 | Cache coldness weight (0–3) |
-| `kernel.sched_cambyses_w1` | 2 | Load contribution weight (0–3) |
+| `kernel.sched_cambyses_w1` | 1 | CPU lightness weight (0–3) |
 | `kernel.sched_cambyses_w2` | 1 | Voluntary switch ratio weight (0–3) |
 | `kernel.sched_cambyses_w3` | 1 | Wakee penalty weight (0–3) |
 
@@ -166,7 +170,7 @@ Instruction-level analysis at 5 GHz (0.2 ns/cycle):
 
 Vanilla uses FIFO — it stops scanning as soon as imbalance is consumed, giving it a ~3x raw-latency advantage. But Cambyses's ~100ns per-invocation overhead is amortized by downstream cost reductions:
 
-1. **Fewer migrations to resolve the same imbalance.** Cambyses preferentially selects heavy-load tasks (F1 weight), so a single well-chosen migration can resolve an imbalance that vanilla would need 2–3 FIFO picks to cover. Each avoided migration saves ~1,000–5,000ns (IPI + rq lock pair + `dequeue_entity`/`enqueue_entity` + context switch on destination CPU). Even one fewer migration per balance run more than repays Cambyses's overhead.
+1. **Fewer migrations to resolve the same imbalance.** Cambyses preferentially selects lightweight, cache-cold tasks (F0+F1+F2), so migration candidates have smaller cache footprints and the imbalance resolves with lower refill cost. Each avoided cache-thrashing migration saves ~1,000–5,000ns (IPI + rq lock pair + `dequeue_entity`/`enqueue_entity` + context switch on destination CPU). Even one fewer costly migration per balance run more than repays Cambyses's overhead.
 
 2. **Suppression of re-migration (ping-pong).** Vanilla's blind FIFO selection often picks a task that was recently migrated or has strong wake affinity to its current CPU — leading the balancer to migrate it back on the next run. Cambyses penalizes high-wakee-flip tasks (F3) and favors voluntary-switch-heavy tasks (F2, indicating transient cache footprints), both of which reduce the probability of re-migration. A single avoided re-migration saves ~2,000–10,000ns (two full migration costs) plus the scheduling latency disruption on both CPUs.
 
@@ -194,6 +198,38 @@ Without prefetch, each of the 3 loads per task serializes into sequential DRAM a
 ### Stack Usage
 
 320–448 bytes: 256 bytes for 32 `cambyses_candidate` structs (8 bytes each: pointer only) + 64 bytes for `s16 scores[32]` + 128 bytes for `int selected[32]` (SIMD path only). Well within the typical 16KB kernel stack.
+
+## Benchmark Results
+
+Measured on Linux 6.18.16, 16-core x86_64, using the `response_lat` benchmark included in `benchmark/`.
+
+### Scheduling latency — asymmetric load scenario
+
+**Setup:** 8 "hot" CPUs each pinned with 4 CPU-bound background workers (32 total); 8 "cold" CPUs each with 1 background worker (8 total). 4 priority workers (sleep 50ms / burst 10ms) pinned to hot CPUs before each sleep, then unpinned on wake — forcing the load balancer to decide which task to pull to a cold CPU.
+
+This scenario isolates the migration selection decision: the candidate pool on each hot CPU contains both CPU-bound bg tasks (low F0, low F1, low F2) and sleep/wake priority tasks (high F0, high F1, high F2). Cambyses selects the priority task; vanilla selects by LRU order.
+
+| Metric | Vanilla | Cambyses | Ratio |
+|--------|---------|----------|-------|
+| ideal | 10,000 µs | — | — |
+| p50 | 21,476 µs | 16,172 µs | **0.75x** |
+| p95 | 25,010 µs | 19,255 µs | **0.77x** |
+| p99 | 26,915 µs | 20,639 µs | **0.77x** |
+| max | 30,044 µs | 21,595 µs | **0.72x** |
+
+**Cambyses reduces p99 scheduling latency by 23.3%.**
+
+### Throughput — hackbench
+
+CPU-bound throughput (hackbench, 5-run median per configuration):
+
+| groups | Vanilla | Cambyses | Δ |
+|--------|---------|----------|---|
+| 4 | 0.235 s | 0.232 s | **−1.3%** (faster) |
+| 8 | 0.485 s | 0.478 s | **−1.4%** (faster) |
+| 16 | 1.016 s | 1.013 s | **−0.3%** (neutral) |
+
+Latency improvement is achieved without throughput regression.
 
 ## File Layout
 
