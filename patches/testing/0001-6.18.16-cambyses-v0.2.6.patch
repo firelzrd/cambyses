@@ -1,7 +1,7 @@
-From 8a77146d543ca7e4fa75e107a262855cc3a48771 Mon Sep 17 00:00:00 2001
+From c5c0498cd4ba902533b5c67b757eb61c5bf44d59 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Wed, 18 Mar 2026 19:55:40 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.2.5
+Date: Thu, 19 Mar 2026 02:49:10 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.2.6
 
 ---
  include/linux/sched.h              |  15 +
@@ -137,7 +137,7 @@ index 8ae86371dd..11e8c835e8 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..703111868e
+index 0000000000..e88c49c960
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,692 @@
@@ -163,14 +163,14 @@ index 0000000000..703111868e
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.2.5"
++#define CAMBYSES_VERSION  "0.2.6"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
 +
-+/* Default weights: uniform w0=w1=w2=w3=1 */
-+u8 sysctl_cambyses_w0 = 1;
-+u8 sysctl_cambyses_w1 = 1;
++/* Default weights: w0=2, w1=3 (CPU lightness dominant), w2=w3=1 */
++u8 sysctl_cambyses_w0 = 2;
++u8 sysctl_cambyses_w1 = 3;
 +u8 sysctl_cambyses_w2 = 1;
 +u8 sysctl_cambyses_w3 = 1;
 +

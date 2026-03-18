@@ -107,9 +107,9 @@ F0, F1, and F2 all point in the same direction: prefer migrating lightweight, ca
 
 F1 uses inverted PELT `util_avg` rather than static task weight. `util_avg` tracks historical CPU utilisation and decays when the task sleeps, so a latency-sensitive task with a 5% duty cycle gets F1 ≈ 40 regardless of its nice value, while a CPU-bound task spinning at 100% gets F1 ≈ 0. This is intentional: the goal is to migrate tasks that are cheap to move, and a sleeping task's cache footprint is already gone.
 
-Default weights (`w0=w1=w2=w3=1`) treat all three migration-friendly signals equally. F3 acts as a symmetric brake.
+Default weights (`w0=2, w1=3, w2=w3=1`) give emphasis to cache coldness and CPU lightness. F3 acts as a symmetric brake.
 
-Score range fits in `s16`: max +292, min −78 with default weights. F0 max ≈130, F1 max ≈40, F2 max = 64, F3 max ≈26. With all weights at 3: max = 3×130 + 3×40 + 3×64 = 702, min = −3×26 = −78.
+Score range fits in `s16`: max +552, min −78 with default weights. F0 max ≈130, F1 max ≈40, F2 max = 64, F3 max ≈26. With all weights at 3: max = 3×130 + 3×40 + 3×64 = 702, min = −3×26 = −78.
 
 ## Configuration
 
@@ -125,8 +125,8 @@ Score range fits in `s16`: max +292, min −78 with default weights. F0 max ≈1
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `kernel.sched_cambyses` | 1 | Enable/disable via static key. When set to 0, all Cambyses paths are NOPed out at zero cost, falling back to the vanilla FIFO path. |
-| `kernel.sched_cambyses_w0` | 1 | Cache coldness weight (0–3) |
-| `kernel.sched_cambyses_w1` | 1 | CPU lightness weight (0–3) |
+| `kernel.sched_cambyses_w0` | 2 | Cache coldness weight (0–3) |
+| `kernel.sched_cambyses_w1` | 3 | CPU lightness weight (0–3) |
 | `kernel.sched_cambyses_w2` | 1 | Voluntary switch ratio weight (0–3) |
 | `kernel.sched_cambyses_w3` | 1 | Wakee penalty weight (0–3) |
 
