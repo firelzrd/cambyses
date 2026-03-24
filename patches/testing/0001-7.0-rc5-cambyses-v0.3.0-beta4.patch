@@ -1,20 +1,20 @@
-From 61b4230ee1dd1e8dc8edeba29bedb8323d0ba6eb Mon Sep 17 00:00:00 2001
+From 632529abf2c85ff9acd06507cb6d677fad430643 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Tue, 24 Mar 2026 17:40:07 +0900
-Subject: [PATCH] 7.0-rc5-cambyses-v0.3.0-beta3
+Date: Wed, 25 Mar 2026 01:45:00 +0900
+Subject: [PATCH] 7.0-rc5-cambyses-v0.3.0-beta4
 
 ---
  include/linux/sched.h              |  19 +
  init/Kconfig                       |  38 ++
  kernel/sched/Makefile              |  30 +
- kernel/sched/cambyses.c            | 950 +++++++++++++++++++++++++++++
+ kernel/sched/cambyses.c            | 966 +++++++++++++++++++++++++++++
  kernel/sched/cambyses.h            | 179 ++++++
  kernel/sched/cambyses_simd_avx2.c  |  97 +++
  kernel/sched/cambyses_simd_neon.c  | 112 ++++
  kernel/sched/cambyses_simd_ssse3.c | 211 +++++++
  kernel/sched/core.c                |   8 +
- kernel/sched/fair.c                |  34 ++
- 10 files changed, 1678 insertions(+)
+ kernel/sched/fair.c                |  34 +
+ 10 files changed, 1694 insertions(+)
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
  create mode 100644 kernel/sched/cambyses_simd_avx2.c
@@ -148,10 +148,10 @@ index b1f1a36703..e58d3a7b2e 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..699b2ea1a0
+index 0000000000..8a666cc895
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
-@@ -0,0 +1,950 @@
+@@ -0,0 +1,966 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -174,7 +174,7 @@ index 0000000000..699b2ea1a0
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.3.0-beta3"
++#define CAMBYSES_VERSION  "0.3.0-beta4"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -572,24 +572,40 @@ index 0000000000..699b2ea1a0
 +
 +
 +/*
-+ * argmax_scores — find index of highest score (branchless).
++ * argmax_scores — find index of highest score via 4-way parallel reduction.
 + *
-+ * Compiles to CMP + CMOV per iteration — no branches, no mispredictions.
-+ * For 32 candidates: ~62 micro-ops, ~20 cycles on modern OOO.
++ * Four independent accumulators break the serial dependency chain so the
++ * OOO engine can overlap 4 CMP+CMOV streams in parallel.  A 3-comparison
++ * tree merge produces the global best.  GPR-only — no FPU context needed.
 + *
-+ * Replaces full bitonic sort: instead of O(n log²n) comparators to
-+ * establish total order, extract the single best candidate in O(n).
++ * For 32 candidates: ~27-43 cycles vs ~104 for serial scan.
 + * Repeated extraction (K times) costs O(K*n) — for typical K=1..4
 + * this is 5-20x faster than a full sort.
++ *
++ * Tie-breaking among equal scores is unspecified; equal scores represent
++ * equally suitable migration candidates.
 + */
 +static __always_inline int argmax_scores(const s16 *scores, int nr_cands)
 +{
-+	int best = 0, j;
++	s16 bv0 = S16_MIN, bv1 = S16_MIN, bv2 = S16_MIN, bv3 = S16_MIN;
++	int bi0 = 0, bi1 = 0, bi2 = 0, bi3 = 0;
++	int j;
 +
-+	for (j = 1; j < nr_cands; j++)
-+		if (scores[j] > scores[best])
-+			best = j;
-+	return best;
++	for (j = 0; j + 3 < nr_cands; j += 4) {
++		if (scores[j]     > bv0) { bv0 = scores[j];     bi0 = j;     }
++		if (scores[j + 1] > bv1) { bv1 = scores[j + 1]; bi1 = j + 1; }
++		if (scores[j + 2] > bv2) { bv2 = scores[j + 2]; bi2 = j + 2; }
++		if (scores[j + 3] > bv3) { bv3 = scores[j + 3]; bi3 = j + 3; }
++	}
++	/* Handle 0–3 remaining elements in chain 0 */
++	for (; j < nr_cands; j++) {
++		if (scores[j] > bv0) { bv0 = scores[j]; bi0 = j; }
++	}
++	/* Tree merge: 3 comparisons */
++	if (bv1 > bv0) { bv0 = bv1; bi0 = bi1; }
++	if (bv3 > bv2) { bv2 = bv3; bi2 = bi3; }
++	if (bv2 > bv0) { bi0 = bi2; }
++	return bi0;
 +}
 +
 +/*
@@ -708,7 +724,7 @@ index 0000000000..699b2ea1a0
 +	 * from -777 to +1746, so it can never be a valid score.
 +	 */
 +#ifdef CONFIG_SCHED_CAMBYSES_SIMD
-+	if (nr_cands >= CAMBYSES_SIMD_THRESHOLD) {
++	if (nr_cands >= CAMBYSES_SIMD_THRESHOLD && irq_fpu_usable()) {
 +		int selected[SCHED_NR_MIGRATE_BREAK];
 +		int nr_selected = 0;
 +		int j;
