@@ -1,7 +1,7 @@
-From c0a71155c9dec361070eede3a55de7d3b5274b4c Mon Sep 17 00:00:00 2001
+From 61b4230ee1dd1e8dc8edeba29bedb8323d0ba6eb Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Tue, 24 Mar 2026 13:40:32 +0900
-Subject: [PATCH] 7.0-rc4-cambyses-v0.3.0-beta2
+Date: Tue, 24 Mar 2026 17:40:07 +0900
+Subject: [PATCH] 7.0-rc5-cambyses-v0.3.0-beta3
 
 ---
  include/linux/sched.h              |  19 +
@@ -148,7 +148,7 @@ index b1f1a36703..e58d3a7b2e 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..5dfd15a87f
+index 0000000000..699b2ea1a0
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,950 @@
@@ -174,7 +174,7 @@ index 0000000000..5dfd15a87f
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.3.0-beta2"
++#define CAMBYSES_VERSION  "0.3.0-beta3"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -360,7 +360,7 @@ index 0000000000..5dfd15a87f
 +
 +static inline int cambyses_sig4(struct task_struct *p, struct lb_env *env)
 +{
-+	return log2p1_u64_u8fp2(rq_clock_task(env->src_rq) -
++	return log2p1_u64_u8fp2(sched_clock_cpu(env->src_cpu) -
 +				 p->se.cambyses_last_migrate);
 +}
 +
@@ -1726,7 +1726,7 @@ index 0000000000..0b95ca27f7
 +
 +#endif /* CONFIG_SCHED_CAMBYSES_SIMD */
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 496dff740d..5982d7592f 100644
+index 496dff740d..3c3226f1a5 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -90,6 +90,7 @@
@@ -1742,7 +1742,7 @@ index 496dff740d..5982d7592f 100644
  			p->sched_class->migrate_task_rq(p, new_cpu);
  		p->se.nr_migrations++;
 +#ifdef CONFIG_SCHED_CAMBYSES
-+		p->se.cambyses_last_migrate = rq_clock_task(task_rq(p));
++		p->se.cambyses_last_migrate = sched_clock_cpu(task_cpu(p));
 +#endif
  		perf_event_task_migrate(p);
  	}
