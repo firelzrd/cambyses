@@ -15,6 +15,7 @@ from PyQt5.QtGui import QDrag, QFont, QColor, QPalette, QPixmap, QPainter, QBrus
 
 SYSCTL_ENABLED = "/proc/sys/kernel/sched_cambyses"
 SYSCTL_CONFIG = "/proc/sys/kernel/sched_cambyses_config"
+SYSCTL_CONFIG_DEFAULT = "/proc/sys/kernel/sched_cambyses_config_default"
 
 SIGNALS = [
     {
@@ -794,13 +795,29 @@ class CambysesConfigWindow(QMainWindow):
         self._set_apply_style_clean()
 
     def _reset_default(self):
-        defaults = [(0, 2), (1, 1), (2, 1), (3, -3)]
+        defaults = self._read_config_default()
+        if defaults is None:
+            QMessageBox.warning(self, "Error",
+                                f"Cannot read {SYSCTL_CONFIG_DEFAULT}\n"
+                                "Cambyses kernel module not loaded?")
+            return
         for slot, (src, w) in zip(self.slots, defaults):
             slot.set_signal(src, w)
         self.toggle.setChecked(True)
         self._on_toggle(True)
         self._update_preview()
         self._set_apply_style_dirty()
+
+    def _read_config_default(self):
+        """Read compiled-in defaults from sysctl. Returns None on failure."""
+        try:
+            with open(SYSCTL_CONFIG_DEFAULT, "r") as f:
+                vals = list(map(int, f.read().strip().split()))
+            if len(vals) == 8:
+                return [(vals[i * 2], vals[i * 2 + 1]) for i in range(4)]
+        except (FileNotFoundError, PermissionError, ValueError):
+            pass
+        return None
 
     def _apply(self):
         config_str = self._build_config_string()

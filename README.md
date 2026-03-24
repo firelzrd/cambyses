@@ -164,7 +164,8 @@ When no slot uses the corresponding signal, the update function returns immediat
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `kernel.sched_cambyses` | `1` | Enable/disable via static key. When `0`, all Cambyses paths are NOP-patched out, falling back to the vanilla FIFO path. |
-| `kernel.sched_cambyses_config` | `0 2 1 1 2 1 3 -3` | 4 slots of `(src, weight)` pairs. Format: `"src0 w0 src1 w1 src2 w2 src3 w3"`. |
+| `kernel.sched_cambyses_config` | `0 2 1 -5 2 0 3 0` | 4 slots of `(src, weight)` pairs. Format: `"src0 w0 src1 w1 src2 w2 src3 w3"`. |
+| `kernel.sched_cambyses_config_default` | (same as above) | Read-only. Compiled-in default configuration. |
 
 #### sched\_cambyses\_config format
 
@@ -173,20 +174,21 @@ src:    0–7   (signal index, see Signal Index Table above)
 weight: −7..+7 (signed; 0 = disable slot entirely, NOP-patched at zero runtime cost)
 ```
 
-Default `"0 2 1 1 2 1 3 -3"`:
+Default `"0 2 1 -5 2 0 3 0"`:
 
 | Slot | src | weight | Signal | Effect |
 |------|-----|--------|--------|--------|
 | 0 | 0 | +2 | exec\_start delta | Strongly prefer starved tasks |
-| 1 | 1 | +1 | runnable starvation | Prefer runqueue-starved tasks |
-| 2 | 2 | +1 | io\_boundness | Prefer I/O-bound tasks (cheap to migrate) |
-| 3 | 3 | −3 | wakee\_penalty | Strongly penalize tasks with complex wake relationships |
+| 1 | 1 | −5 | runnable starvation | Strongly penalize runqueue-starved tasks |
+| 2 | 2 | 0 | io\_boundness | Disabled |
+| 3 | 3 | 0 | wakee\_penalty | Disabled |
 
 #### Example: disable runnable starvation
 
 ```sh
 # Disable slot 1 (set weight to 0):
-echo "0 2 1 0 2 1 3 -3" > /proc/sys/kernel/sched_cambyses_config
+echo "0 2 1 0 2 0 3 0" > /proc/sys/kernel/sched_cambyses_config
+# (default has slot 1 weight = -5; setting to 0 disables it)
 ```
 
 Setting weight to 0 NOP-patches the entire slot. Setting it back to non-zero re-enables it at the next `stop_machine` boundary.
@@ -194,15 +196,15 @@ Setting weight to 0 NOP-patches the entire slot. Setting it back to non-zero re-
 #### Example: use last\_migrate delta instead of io\_boundness
 
 ```sh
-# Replace slot 2 with sig4 (last_migrate delta):
-echo "0 2 1 1 4 1 3 -3" > /proc/sys/kernel/sched_cambyses_config
+# Replace slot 2 with sig4 (last_migrate delta), weight +1:
+echo "0 2 1 -5 4 1 3 0" > /proc/sys/kernel/sched_cambyses_config
 ```
 
 #### Example: add weighted\_load
 
 ```sh
-# Replace slot 2 with sig7 (weighted_load):
-echo "0 2 1 1 7 1 3 -3" > /proc/sys/kernel/sched_cambyses_config
+# Replace slot 2 with sig7 (weighted_load), weight +1:
+echo "0 2 1 -5 7 1 3 0" > /proc/sys/kernel/sched_cambyses_config
 ```
 
 ## Performance

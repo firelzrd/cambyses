@@ -1,20 +1,20 @@
-From 98f86737c26c038c6f6740b5e5010c52236e4609 Mon Sep 17 00:00:00 2001
+From c0a71155c9dec361070eede3a55de7d3b5274b4c Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Mon, 23 Mar 2026 02:33:08 +0900
-Subject: [PATCH] 7.0-rc4-cambyses-v0.3.0-beta1
+Date: Tue, 24 Mar 2026 13:40:32 +0900
+Subject: [PATCH] 7.0-rc4-cambyses-v0.3.0-beta2
 
 ---
  include/linux/sched.h              |  19 +
  init/Kconfig                       |  38 ++
  kernel/sched/Makefile              |  30 +
- kernel/sched/cambyses.c            | 940 +++++++++++++++++++++++++++++
- kernel/sched/cambyses.h            | 178 ++++++
+ kernel/sched/cambyses.c            | 950 +++++++++++++++++++++++++++++
+ kernel/sched/cambyses.h            | 179 ++++++
  kernel/sched/cambyses_simd_avx2.c  |  97 +++
  kernel/sched/cambyses_simd_neon.c  | 112 ++++
  kernel/sched/cambyses_simd_ssse3.c | 211 +++++++
  kernel/sched/core.c                |   8 +
  kernel/sched/fair.c                |  34 ++
- 10 files changed, 1667 insertions(+)
+ 10 files changed, 1678 insertions(+)
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
  create mode 100644 kernel/sched/cambyses_simd_avx2.c
@@ -148,10 +148,10 @@ index b1f1a36703..e58d3a7b2e 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..583dca22c6
+index 0000000000..5dfd15a87f
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
-@@ -0,0 +1,940 @@
+@@ -0,0 +1,950 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -174,7 +174,7 @@ index 0000000000..583dca22c6
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.3.0-beta1"
++#define CAMBYSES_VERSION  "0.3.0-beta2"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -186,11 +186,11 @@ index 0000000000..583dca22c6
 + *   src: 0-7  (signal function index, see CAMBYSES_SIG_* below)
 + *   w:  -7..+7 (signed weight; 0 = disable slot entirely via NOP patch)
 + *
-+ * Default: "0 2 1 1 2 1 3 -3"
++ * Default: "0 2 1 -5 2 0 3 0"
 + *   slot0: sig0 (exec_start delta)      × +2
-+ *   slot1: sig1 (runnable starvation)   × +1
-+ *   slot2: sig2 (io_boundness)          × +1
-+ *   slot3: sig3 (wakee_penalty)         × -3
++ *   slot1: sig1 (runnable starvation)   × -5
++ *   slot2: sig2 (io_boundness)          × 0 (disabled)
++ *   slot3: sig3 (wakee_penalty)         × 0 (disabled)
 + *
 + * Signal index table:
 + *   0: exec_start delta      — log2p1(rq_clock - exec_start)    [inline]
@@ -202,18 +202,21 @@ index 0000000000..583dca22c6
 + *   6: util_avg              — util_avg >> 4 (0-64)             [inline]
 + *   7: weighted_load         — util_avg × log2p1(weight) >> 10  [inline]
 + */
-+int sysctl_cambyses_config[8] = {0, 2,  1, 1,  2, 1,  3, -3};
++int sysctl_cambyses_config[8] = {0, 2,  1, -5,  2, 0,  3, 0};
++
++/* Read-only copy of the compiled-in default configuration */
++const int sysctl_cambyses_config_default[8] = {0, 2,  1, -5,  2, 0,  3, 0};
 +
 +/*
 + * Per-weight activity keys — NOP-patched when the slot weight is 0.
 + * All start FALSE; sched_cambyses_sysctl_init() enables slots with
-+ * non-zero default weights {2, 1, 1, -3} → w0, w1, w2, w3 enabled.
++ * non-zero default weights {2, -5, 0, 0} → w0, w1 enabled; w2, w3 disabled.
 + * Updated by sched_cambyses_config_handler() on sysctl write.
 + */
 +DEFINE_STATIC_KEY_FALSE(cambyses_w0_active);   /* config[1] = 2  */
-+DEFINE_STATIC_KEY_FALSE(cambyses_w1_active);   /* config[3] = 1  */
-+DEFINE_STATIC_KEY_FALSE(cambyses_w2_active);   /* config[5] = 1  */
-+DEFINE_STATIC_KEY_FALSE(cambyses_w3_active);   /* config[7] = -3 */
++DEFINE_STATIC_KEY_FALSE(cambyses_w1_active);   /* config[3] = -5 */
++DEFINE_STATIC_KEY_FALSE(cambyses_w2_active);   /* config[5] = 0  */
++DEFINE_STATIC_KEY_FALSE(cambyses_w3_active);   /* config[7] = 0  */
 +
 +/*
 + * Per-slot signal-selection keys — 3 bits (bit2..bit0) per slot encode
@@ -1067,6 +1070,13 @@ index 0000000000..583dca22c6
 +		.mode		= 0644,
 +		.proc_handler	= sched_cambyses_config_handler,
 +	},
++	{
++		.procname	= "sched_cambyses_config_default",
++		.data		= (void *)sysctl_cambyses_config_default,
++		.maxlen		= sizeof(sysctl_cambyses_config_default),
++		.mode		= 0444,
++		.proc_handler	= proc_dointvec,
++	},
 +};
 +
 +static int __init sched_cambyses_sysctl_init(void)
@@ -1094,10 +1104,10 @@ index 0000000000..583dca22c6
 +#endif /* CONFIG_SYSCTL */
 diff --git a/kernel/sched/cambyses.h b/kernel/sched/cambyses.h
 new file mode 100644
-index 0000000000..321c3664dd
+index 0000000000..c86c325b99
 --- /dev/null
 +++ b/kernel/sched/cambyses.h
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,179 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -1131,9 +1141,10 @@ index 0000000000..321c3664dd
 +/*
 + * sysctl_cambyses_config — per-slot (signal, weight) pairs for F0..F3.
 + * Format: "src0 w0 src1 w1 src2 w2 src3 w3"
-+ * Default: {0, 2,  1, 1,  2, 1,  3, -3}
++ * Default: {0, 2,  1, -5,  2, 0,  3, 0}
 + */
 +extern int sysctl_cambyses_config[8];
++extern const int sysctl_cambyses_config_default[8];
 +
 +/*
 + * Per-weight activity keys — NOP-patched when the slot weight is 0.
