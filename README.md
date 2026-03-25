@@ -10,6 +10,8 @@ The CFS load balancer's `detach_tasks()` scans the `cfs_tasks` list from the tai
 
 This means that in a runqueue with a mix of cache-hot, cache-cold, heavy, and light tasks, the load balancer may migrate a cache-hot lightweight task when a cache-cold heavyweight task would have been a far better choice — resolving the imbalance more efficiently with lower migration cost.
 
+Because the tail position in `cfs_tasks` depends on insertion order and vruntime-driven requeuing, which candidate happens to be at the tail at the moment `load_balance()` fires is essentially timing-dependent. The same workload can produce different migration decisions depending on when the balancer runs relative to wakeups and context switches — a stochastic signal that may or may not align with the optimal choice.
+
 ## Approach
 
 Cambyses introduces a 2-phase pipeline that collects, scores, and selects migration candidates before detaching:
@@ -21,26 +23,28 @@ Both the pull path (`detach_tasks()`) and push path (`detach_one_task()`) are su
 
 All Cambyses paths run under the existing `rq_lock_irqsave` — no additional locking is required.
 
+![Cambyses Algorithm Overview](algorithm_overview.svg)
+
 ## Key Techniques
 
 ### Argmax extraction
 
 Phase 2 extracts the best candidate via O(N) argmax scan instead of establishing total order over all candidates. Since typically only K=1..4 tasks are detached per balance run, full sorting (O(N log²N)) would waste work on the remaining candidates. Repeated argmax extraction costs O(K×N) — for K=3, N=32 this is ~186 micro-ops vs ~588+ for a sort network.
 
-The scalar argmax compiles to branchless CMP+CMOV (no branch mispredictions), and the 64-byte `s16 scores[]` array stays L1-hot across extractions. Consumed candidates are marked with `S16_MIN` (-32768), which can never be a valid score.
+The scalar argmax uses **4-way parallel reduction**: four independent accumulators break the serial dependency chain, allowing the OOO engine to overlap the comparison streams. A 3-comparison tree merge produces the global best. The 64-byte `s16 scores[]` array stays L1-hot across extractions. Consumed candidates are marked with `S16_MIN` (-32768), which can never be a valid score.
 
 ### SIMD argmax acceleration
 
 When `CONFIG_SCHED_CAMBYSES_SIMD` is enabled and 8+ candidates are available, Phase 2 uses SIMD instructions to find the highest-scored candidate. The 32-entry `s16 scores[]` array is loaded into SIMD registers and reduced to the argmax index in a single pass:
 
-| ISA | Registers | Algorithm | Ops | Cycles | ns @ 5 GHz |
-|-----|-----------|-----------|-----|--------|------------|
-| Scalar | — | CMP+CMOV loop (N entries) | N×2 | N=10: ~20, N=24: ~48 | ~4–10 |
-| AVX2 / SSE4.1 | 4 xmm (32 scores) | XOR 0x7FFF → 4× PHMINPOSUW → 3 scalar CMP | ~15 | ~10 | ~2 |
+| ISA | Registers | Algorithm | Ops | Cycles (measured) | ns @ 5 GHz |
+|-----|-----------|-----------|-----|-------------------|------------|
+| Scalar (4-way) | GPR only | 4-way parallel reduction → 3-CMP tree merge | N×~1.3 + 3 | N=32: ~27–43, N=8: ~14 | ~5–9 |
+| AVX2 / SSE4.1 | 4 xmm (32 scores) | XOR 0x7FFF → 4× PHMINPOSUW → 3 scalar CMP | ~15 | ~7 | ~1.4 |
 | SSSE3 (no SSE4.1) | 4 xmm (32 scores) | PMAXSW → scalar hmax → PCMPEQW → PMOVMSKB → BSF | ~24 SIMD + ~7 scalar | ~14 | ~3 |
 | NEON | 4 Q regs (32 scores) | VMAXQ → SMAXV → CMEQ → positional weight bitmask → CTZ | ~20 | ~12 | ~2 |
 
-The FPU context cost is near-zero in the common scheduler path: `cambyses_simd_begin()` checks `TIF_NEED_FPU_LOAD` (x86) / `TIF_FOREIGN_FPSTATE` (ARM64), which is typically already set after a context switch, making the save a no-op. Falls back to scalar argmax when candidate count is below `CAMBYSES_SIMD_THRESHOLD` (8) or CPU lacks support.
+The SIMD path is guarded by `irq_fpu_usable()`: `kernel_fpu_begin()` is unsafe in softirq context (`irq_fpu_usable()` returns false when `softirq_count() != 0`), so the SIMD argmax is only entered from `newidle_balance` (non-softirq). Load balancing via `SCHED_SOFTIRQ` (`run_rebalance_domains`) falls back to the scalar 4-way path. In the `newidle_balance` path, the FPU context cost is near-zero: `TIF_NEED_FPU_LOAD` (x86) / `TIF_FOREIGN_FPSTATE` (ARM64) is typically already set after a context switch, making the save a no-op. Falls back to scalar argmax when candidate count is below `CAMBYSES_SIMD_THRESHOLD` (8) or CPU lacks support.
 
 ### Score Shadow
 
@@ -70,15 +74,17 @@ struct sched_entity {
 
 Both `cambyses_update_sig3()` and `cambyses_update_ctxsw()` check a static key at entry and return immediately (NOP-patched) when no active slot uses the corresponding cached signals — eliminating update overhead when those signals are not configured.
 
-| CPU class | Cache lines saved | Cycle reduction | Examples |
-|-----------|-------------------|-----------------|----------|
-| OOO (wide) | 1–2 | ~0% (loads parallel) | Zen 3/4, Golden Cove |
+The following table shows the **Phase 1 scoring cost reduction from Score Shadow caching alone** — not the overall effectiveness of Cambyses. OOO CPUs see ~0% reduction from caching because their hardware already parallelizes the loads that caching eliminates; Cambyses's core benefit (scoring-based candidate selection) applies equally to all CPU classes.
+
+| CPU class | Cache lines saved | Phase 1 scoring cycle reduction (from caching) | Examples |
+|-----------|-------------------|-------------------------------------------------|----------|
+| OOO (wide) | 1–2 | ~0% (loads already parallelized by hardware) | Zen 3/4, Golden Cove |
 | Limited OOO | 1–2 | ~10–20% | Silvermont, Gracemont |
 | In-order | 1–2 | ~20–30% | Cortex-A55, Bonnell |
 
 ### Prefetch
 
-Phase 1 uses 1-ahead software prefetch: while scoring task N, the cache lines of task N+1 are prefetched. This hides DRAM latency at zero cost on OOO CPUs (prefetch of already-in-flight loads is a NOP) and provides 60–67% cycle reduction on in-order cores.
+Phase 1 uses 1-ahead software prefetch: while scoring task N, the cache lines of task N+1 are prefetched. This hides DRAM latency at zero cost on OOO CPUs (prefetch of already-in-flight loads is a NOP) and reduces **Phase 1 per-candidate scanning cycles** by 60–67% on in-order cores (see [In-order CPU Impact](#in-order-cpu-impact) for measurements).
 
 Four prefetch targets are issued per candidate:
 
@@ -111,16 +117,16 @@ Signals 0/3/4 use `log2p1_u64_u8fp2()` — a fixed-point log2 with integer part 
 
 ### Signal Semantics and Recommended Sign
 
-The score formula is fully additive: `score = Σ w_i × signal_i`. The sign of each weight determines whether a signal promotes (+) or penalizes (−) migration. The **Sign** column in the table above shows the recommended polarity for the offensive migration strategy (actively migrate heavy/starved tasks to idle CPUs).
+The score formula is fully additive: `score = Σ w_i × signal_i`. The sign of each weight determines whether a signal promotes (+) or penalizes (−) migration. The **Sign** column in the table above shows the recommended polarity for the **offensive** migration strategy (actively migrate heavy/starved tasks to idle CPUs). Note that the compiled-in default configuration uses a **defensive** strategy for sig1 (see [Configuration](#configuration) for rationale).
 
-| Signal | Meaning | Use **+** when | Use **−** when |
-|--------|---------|----------------|----------------|
-| **sig0** exec\_start delta | How long since this task last ran | **Default** — starved tasks should be prioritized for migration to a free CPU | Rarely useful negative |
-| **sig1** runnable starvation | `runnable_avg − util_avg` (time spent waiting in runqueue) | **Default** — prioritize tasks being squeezed by contention — migrate them to relieve starvation | Rarely useful negative |
-| **sig2** io\_boundness | I/O intensity: `vol_ratio × (1 − util_frac)` | **Default** — these tasks have low cache footprint and are cheap to migrate | Their wake affinity is strong; penalize when minimizing wake latency is critical |
-| **sig3** wakee\_penalty | Wakeup relationship complexity (wakee\_flips) | You want to actively migrate tasks that frequently wake others (unusual) | **Default** — tasks with complex wake relationships will be pulled back by wake affinity; penalize them |
+| Signal | Meaning | Use **+** (offensive) | Use **−** (defensive) |
+|--------|---------|----------------------|----------------------|
+| **sig0** exec\_start delta | How long since this task last ran | Starved tasks should be prioritized for migration to a free CPU | Rarely useful negative |
+| **sig1** runnable starvation | `runnable_avg − util_avg` (time spent waiting in runqueue) | Prioritize tasks being squeezed by contention — migrate them to relieve starvation | Avoid migrating tasks with high runqueue contention — they may be CPU-bound and equally starved elsewhere; prefer migrating less-contended tasks instead |
+| **sig2** io\_boundness | I/O intensity: `vol_ratio × (1 − util_frac)` | These tasks have low cache footprint and are cheap to migrate | Their wake affinity is strong; penalize when minimizing wake latency is critical |
+| **sig3** wakee\_penalty | Wakeup relationship complexity (wakee\_flips) | Actively migrate tasks that frequently wake others (unusual) | Tasks with complex wake relationships will be pulled back by wake affinity; penalize them |
 | **sig4** last\_migrate delta | How long since last migration | Prefer stable tasks that haven't moved recently; prevents migration thrash | Rarely useful negative |
-| **sig5** nvcsw ratio | Fraction of voluntary context switches (sleep/I/O rate) | You want to migrate I/O-bound tasks to free up CPU-bound slots (reduces CPU contention) | Tasks with high sleep rate have strong wake affinity to their CPU; penalize to avoid displacing them |
+| **sig5** nvcsw ratio | Fraction of voluntary context switches (sleep/I/O rate) | Migrate I/O-bound tasks to free up CPU-bound slots (reduces CPU contention) | Tasks with high sleep rate have strong wake affinity to their CPU; penalize to avoid displacing them |
 | **sig6** util\_avg | Raw CPU utilization (0–1024, scaled to 0–64) | Prefer heavier tasks, similar to sig7 but without priority weighting | Prefer lighter tasks (defensive strategy) |
 | **sig7** weighted\_load | CPU load contribution (util × priority) | Heavy tasks consume imbalance budget per migration, reducing total migration count | Rarely useful negative |
 
@@ -179,9 +185,11 @@ Default `"0 2 1 -5 2 0 3 0"`:
 | Slot | src | weight | Signal | Effect |
 |------|-----|--------|--------|--------|
 | 0 | 0 | +2 | exec\_start delta | Strongly prefer starved tasks |
-| 1 | 1 | −5 | runnable starvation | Strongly penalize runqueue-starved tasks |
+| 1 | 1 | −5 | runnable starvation | Strongly prefer tasks with **low** runqueue starvation |
 | 2 | 2 | 0 | io\_boundness | Disabled |
 | 3 | 3 | 0 | wakee\_penalty | Disabled |
+
+**Why sig1 uses negative weight in the default**: The Signal Index Table lists **+** as the recommended sign for the offensive strategy, but the default configuration intentionally uses −5 (defensive strategy). A high `runnable_avg − util_avg` often indicates a CPU-bound task competing on a saturated runqueue — migrating it merely moves the contention. By penalizing high-starvation tasks, the default prefers migrating tasks that are *not* deeply contended, which tend to be lighter and cheaper to move, while sig0 (exec\_start delta, +2) still ensures that genuinely starved tasks get priority based on absolute wait time.
 
 #### Example: disable runnable starvation
 
@@ -211,7 +219,7 @@ echo "0 2 1 -5 7 1 3 0" > /proc/sys/kernel/sched_cambyses_config
 
 ### Cost Model
 
-Cambyses's overhead is dominated by **Phase 1 (scanning + scoring)**, which requires reading 3 cache lines per `task_struct`. The per-candidate cost depends heavily on cache residency:
+Cambyses's overhead is dominated by **Phase 1 (scanning + scoring)**, which requires reading 3 cache lines per `task_struct`. The per-candidate cost depends heavily on cache residency. Note that `load_balance()` is invoked at most once per tick (typically every 1–4ms), so even the worst-case overhead of ~2.5μs represents <0.25% of the inter-invocation interval:
 
 | Cache state | Per-task cost | N=32 total | When |
 |-------------|---------------|------------|------|
@@ -219,29 +227,31 @@ Cambyses's overhead is dominated by **Phase 1 (scanning + scoring)**, which requ
 | L3 hit (typical) | ~12–20ns | ~400–650ns | Normal load balancer invocation |
 | LLC miss → DRAM (worst case) | ~60–80ns | ~2,000–2,500ns | Cold runqueue, NUMA migration |
 
-In contrast, the scoring phase (~3–4ns per candidate) and the argmax extraction (~2–10ns per extraction) are register/L1-resident operations and negligible compared to memory access.
+In contrast, the scoring phase (~3–4ns per candidate) and the argmax extraction (~1.4–9ns per extraction depending on ISA path) are register/L1-resident operations and negligible compared to memory access.
 
 ### Vanilla vs Cambyses
+
+Cambyses scans all candidates before detaching (unlike vanilla's early-exit FIFO), so it has higher per-invocation latency. However, this cost is a one-time ~100–300ns overhead per `load_balance()` call (invoked every 1–4ms), and is recovered by improved migration quality — see [Why the overhead pays for itself](#why-the-overhead-pays-for-itself) below.
 
 Instruction-level analysis at 5 GHz (0.2 ns/cycle):
 
 #### Typical case (16 tasks scanned, N=10 candidates, K=3 detached)
 
-| Phase | Vanilla | Scalar | AVX2 | SSSE3 | NEON |
-|-------|---------|--------|------|-------|------|
+| Phase | Vanilla | Scalar (4-way) | AVX2 | SSSE3 | NEON |
+|-------|---------|----------------|------|-------|------|
 | Phase 1: Scan + Score | ~106 cyc | ~548 cyc | ~548 cyc | ~548 cyc | ~548 cyc |
-| Phase 2: Selection | — | ~60 cyc (3×20) | ~30 cyc (3×10) | ~42 cyc (3×14) | ~36 cyc (3×12) |
+| Phase 2: Selection | — | ~42 cyc (3×14) | ~21 cyc (3×7) | ~42 cyc (3×14) | ~36 cyc (3×12) |
 | Detach | ~99 cyc | ~99 cyc | ~99 cyc | ~99 cyc | ~99 cyc |
-| **Total** | **~205 cyc / ~41 ns** | **~707 cyc / ~141 ns** | **~677 cyc / ~135 ns** | **~689 cyc / ~138 ns** | **~683 cyc / ~137 ns** |
+| **Total** | **~205 cyc / ~41 ns** | **~689 cyc / ~138 ns** | **~668 cyc / ~134 ns** | **~689 cyc / ~138 ns** | **~683 cyc / ~137 ns** |
 
 #### Worst case (32 tasks scanned, N=24 candidates, K=8 detached)
 
-| Phase | Vanilla | Scalar | AVX2 | SSSE3 | NEON |
-|-------|---------|--------|------|-------|------|
+| Phase | Vanilla | Scalar (4-way) | AVX2 | SSSE3 | NEON |
+|-------|---------|----------------|------|-------|------|
 | Phase 1: Scan + Score | ~206 cyc | ~1168 cyc | ~1168 cyc | ~1168 cyc | ~1168 cyc |
-| Phase 2: Selection | — | ~384 cyc (8×48) | ~80 cyc (8×10) | ~112 cyc (8×14) | ~96 cyc (8×12) |
+| Phase 2: Selection | — | ~272 cyc (8×34) | ~56 cyc (8×7) | ~112 cyc (8×14) | ~96 cyc (8×12) |
 | Detach | ~264 cyc | ~264 cyc | ~264 cyc | ~264 cyc | ~264 cyc |
-| **Total** | **~470 cyc / ~94 ns** | **~1816 cyc / ~363 ns** | **~1512 cyc / ~302 ns** | **~1544 cyc / ~309 ns** | **~1528 cyc / ~306 ns** |
+| **Total** | **~470 cyc / ~94 ns** | **~1704 cyc / ~341 ns** | **~1488 cyc / ~298 ns** | **~1544 cyc / ~309 ns** | **~1528 cyc / ~306 ns** |
 
 ### Why the overhead pays for itself
 
@@ -257,13 +267,15 @@ Vanilla uses FIFO — it stops scanning as soon as imbalance is consumed, giving
 
 ### Additional observations
 
-- **Phase 1 dominates (65–85%)**: The argmax extraction in Phase 2 is negligible (~30 cycles for K=3 with AVX2). The overwhelming cost is Phase 1's full scan of the runqueue.
-- **SIMD scales with K**: Scalar argmax cost is O(K×N). SIMD argmax is O(K) with fixed ~10–14 cycles per extraction regardless of N. At K=8, AVX2 reduces Phase 2 from ~384 to ~80 cycles (79%).
-- **Prefetch closes the gap**: 1-ahead software prefetch brings per-task cost within ~8% of vanilla, despite computing multi-signal scores. On in-order CPUs, prefetch provides 60–67% cycle reduction.
+- **Phase 1 dominates (65–85%)**: The argmax extraction in Phase 2 is negligible (~21 cycles for K=3 with AVX2). The overwhelming cost is Phase 1's full scan of the runqueue.
+- **4-way scalar is competitive**: The 4-way parallel reduction (~27–43 cycles for N=32) closes much of the gap to SIMD (~7 cycles). At K=3, the difference is only ~21 cycles total — negligible compared to Phase 1.
+- **SIMD scales with K**: Scalar argmax cost is O(K×N). SIMD argmax is O(K) with fixed ~7–14 cycles per extraction regardless of N. At K=8, AVX2 reduces Phase 2 from ~272 to ~56 cycles (79%).
+- **SIMD limited to newidle path (scalar fallback is sufficient)**: `kernel_fpu_begin()` is unsafe in softirq context, so SIMD argmax only activates from `newidle_balance`. The softirq path (`run_rebalance_domains`) uses the scalar 4-way fallback — which is only ~21 cycles slower than AVX2 at K=3 (see above), so the absence of SIMD on this path has negligible impact.
+- **Prefetch closes the gap**: 1-ahead software prefetch brings per-task Phase 1 scanning cost within ~8% of vanilla, despite computing multi-signal scores. On in-order CPUs, prefetch reduces Phase 1 per-candidate cycles by 60–67%.
 
 ### In-order CPU Impact
 
-On in-order or limited-OOO cores (ARM Cortex-A55, Atom Bonnell, RISC-V), loads cannot be parallelized by the hardware. Software prefetch becomes critical:
+On in-order or limited-OOO cores (ARM Cortex-A55, Atom Bonnell, RISC-V), loads cannot be parallelized by the hardware. Software prefetch becomes critical for reducing **Phase 1 scanning cost** (the dominant component of Cambyses's per-invocation overhead):
 
 | Mode | N=32 without prefetch | N=32 with 1-ahead prefetch | Reduction |
 |------|----------------------|---------------------------|-----------|
@@ -273,56 +285,6 @@ On in-order or limited-OOO cores (ARM Cortex-A55, Atom Bonnell, RISC-V), loads c
 ### Stack Usage
 
 320–448 bytes: 256 bytes for 32 `cambyses_candidate` structs (8 bytes each: pointer only) + 64 bytes for `s16 scores[32]` + 128 bytes for `int selected[32]` (SIMD path only). Well within the typical 16KB kernel stack.
-
-## Benchmarks
-
-Two benchmark programs are included in `benchmark/`:
-
-### response\_lat
-
-Measures scheduling response latency in an asymmetric load scenario.
-
-**Task types:**
-- Type A ("interactive"): sleep → burst compute → repeat. Latency is measured as burst completion time.
-- Type B ("background"): continuous pointer-chase through randomised array. Throughput measured as sweep count.
-
-**Key parameters:** `-b N` (Type B per hot CPU, default: 6), `-s MS` (Type A sleep), `-t MS` (Type A burst), `-d S` (duration), `-w S` (warmup)
-
-**Output:** `RESULT avg=N p50=N p95=N p99=N max=N ideal=N tput=N`
-
-### migrate\_tput
-
-Measures migration quality via Type B throughput and sweep latency.
-
-**Task types:**
-- Type A ("sleeper"): sleep/wake cycle, cheap to migrate. Re-pins to hot CPU each cycle.
-- Type B ("cache hog"): pointer-chase with large working set. Expensive to migrate (full L2 rebuild).
-
-**Key parameters:** `-b N` (Type B per hot CPU, default: 2), `-a N` (Type A per hot CPU), `-m KB` (working set), `-s MS` (Type A sleep), `-t MS` (Type A burst), `-d S` (duration)
-
-**Output:** `RESULT tput=N mig_b=N mig_a=N lat_avg=N lat_p50=N lat_p99=N lat_max=N`
-
-- `tput`: Total Type B sweep count (higher = better, means cache stayed warm)
-- `mig_b`/`mig_a`: Migration counts for Type B/A workers
-- `lat_*`: Type B sweep latency in microseconds (lower = better)
-
-## Benchmark Scripts
-
-All scripts auto-configure the benchmark environment (stop irqbalance, set `performance` governor, disable boost) and restore on exit.
-
-Scripts that sweep weights read `sched_cambyses_config` to determine signal sources and automatically apply the correct sign based on signal type. CLI weight arguments are absolute values (0–3).
-
-| Script | Purpose | Benchmark | Usage |
-|--------|---------|-----------|-------|
-| `run_response_lat.sh` | Single A/B comparison | response\_lat | `sudo ./run_response_lat.sh [bench opts]` |
-| `run_migrate_tput.sh` | Single A/B comparison | migrate\_tput | `sudo ./run_migrate_tput.sh [bench opts]` |
-| `ab_migrate_tput.sh` | Interleaved A/B (N rounds) | migrate\_tput | `sudo ./ab_migrate_tput.sh [rounds [dur [extra]]]` |
-| `ab_confirm.sh` | Interleaved A/B for a single config | response\_lat | `sudo ./ab_confirm.sh [\|w0\| \|w1\| \|w2\| \|w3\| [rounds [dur]]]` |
-| `sweep.sh` | 2-phase weight sweep (256 combos) | response\_lat | `sudo ./sweep.sh [-k K] [-1 DUR1] [-2 DUR2] [-n TOP_N]` |
-| `sweep_migrate_tput.sh` | Parameter exploration | migrate\_tput | `sudo ./sweep_migrate_tput.sh` |
-| `weight_sweep.sh` | Full combination sweep w/ t-test | response\_lat | `sudo ./weight_sweep.sh [-d S] [-r R] [-T T]` |
-| `weight_confirm.sh` | Statistical confirmation of top-N | response\_lat | `sudo ./weight_confirm.sh [-d S] [-r R] [-T T]` |
-| `compare_configs.sh` | 4-way comparison w/ all-pairs t-test | response\_lat | `sudo ./compare_configs.sh [-d S] [-r R] [-T T]` |
 
 ## File Layout
 
