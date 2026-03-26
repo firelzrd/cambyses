@@ -1,5 +1,13 @@
 # Cambyses
 
+> **⚠️ Project Discontinued**
+>
+> This project aimed to improve system performance by enhancing cache locality through higher-quality migration decisions, and built an evaluation infrastructure using a 4-slot scoring vector. However, benchmarks failed to show any meaningful performance difference. The project is therefore discontinued.
+>
+> A heartfelt thank you to the volunteers who generously donated their time and hardware to test Cambyses builds, run benchmarks, and report results. Your contributions were invaluable in reaching a clear, evidence-based conclusion. This project would not have been possible without your support.
+>
+> The source code will remain available as-is for reference purposes. No further development or maintenance is planned unless new findings suggest a viable path forward.
+
 **Context-Aware Migration Balancer Yielding Scored Entity Selection**
 
 A Linux kernel patch that replaces the default FIFO task selection in the CFS load balancer with scoring-based optimal candidate selection, improving the quality of task migration decisions.
