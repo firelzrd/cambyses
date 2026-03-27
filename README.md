@@ -7,6 +7,8 @@
 > A heartfelt thank you to the volunteers who generously donated their time and hardware to test Cambyses builds, run benchmarks, and report results. Your contributions were invaluable in reaching a clear, evidence-based conclusion. This project would not have been possible without your support.
 >
 > The source code will remain available as-is for reference purposes. No further development or maintenance is planned unless new findings suggest a viable path forward.
+>
+> As a parting gift, a standalone patch distilling the core insight from this project — starvation-aware migration candidate selection — is included in [`patches/`](patches/). See [Parting Gift: Starvation-Aware Migration Candidate Selection](https://github.com/firelzrd/cambyses#parting-gift-starvation-aware-migration-candidate-selection) for details.
 
 **Context-Aware Migration Balancer Yielding Scored Entity Selection**
 
@@ -306,6 +308,63 @@ kernel/sched/
 ├── cambyses_simd_neon.c      # NEON SIMD argmax (ARM64)
 └── Kconfig                   # CONFIG_SCHED_CAMBYSES, CONFIG_SCHED_CAMBYSES_SIMD
 ```
+
+## Parting Gift: Starvation-Aware Migration Candidate Selection
+
+While Cambyses as a whole did not produce measurable performance improvements, **one core insight survived**: using runnable starvation as a criterion for migration candidate selection has sound theoretical justification.
+
+The patch [`patches/0001-sched-fair-add-starvation-aware-migration-candidate-.patch`](patches/0001-sched-fair-add-starvation-aware-migration-candidate-.patch) distills this insight into a minimal, standalone enhancement for the CFS load balancer — independent of the Cambyses framework.
+
+### Concept
+
+Instead of scanning the `cfs_tasks` list from the tail (effectively arbitrary selection), migration candidates are ordered by a **migration suitability score**:
+
+```
+score = (1024 - (runnable_avg - util_avg)) * weight / 1387
+```
+
+- **Heavy tasks** (high `weight`) resolve imbalance efficiently with fewer migrations
+- **Low-starvation tasks** (small `runnable_avg - util_avg`) are well-served on their current CPU, meaning they are unlikely to need re-migration after being moved
+
+The best candidate (highest score) is retrieved in **O(1)** from a per-rq cached rbtree (`starv_timeline`), ordered descending by score.
+
+### How It Works
+
+| Component | Description |
+|-----------|-------------|
+| `starv_score` (u16) | Per-task score, updated inline in the PELT path (`__update_load_avg_se`) |
+| `starv_node` (rb_node) | Per-SE node in the `starv_timeline` rbtree |
+| `starv_timeline` (rb_root_cached) | Per-rq cached rbtree; leftmost = highest score = best candidate |
+| `detach_tasks_starv()` | Walks the rbtree from leftmost, replacing the vanilla list walk |
+| `sysctl_sched_starv_migrate` | Runtime toggle (default: 1); SMT siblings always use the conventional list walk |
+
+### Relation to Cambyses
+
+This patch is a direct descendant of Cambyses's **sig1** (runnable starvation signal), combined with its **sig7** (weighted load) into a single unified score. Where Cambyses used a multi-signal scoring vector with 4-slot configuration, this patch uses a single fixed formula — trading configurability for simplicity and zero-configuration correctness.
+
+The division by 1387 is approximated as `(x * 3095) >> 22`, and the result fits in a `u16` (max ≈ 65531).
+
+### Applying
+
+```sh
+cd /path/to/linux
+git apply /path/to/0001-sched-fair-add-starvation-aware-migration-candidate-.patch
+```
+
+Enable `CONFIG_SCHED_STARV_MIGRATE=y` in your kernel config (default: y when `SMP` is enabled).
+
+Runtime control:
+```sh
+# Disable (fall back to vanilla list walk)
+echo 0 > /proc/sys/kernel/sched_starv_migrate
+
+# Re-enable
+echo 1 > /proc/sys/kernel/sched_starv_migrate
+```
+
+### Status
+
+This patch is provided as-is. It has been compile-tested but not benchmarked. It is offered as a starting point for anyone interested in exploring starvation-aware migration candidate selection in the CFS load balancer.
 
 ## License
 
