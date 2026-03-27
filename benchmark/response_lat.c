@@ -53,6 +53,7 @@
  *   -p N    priority task count (default: num_cpus/4, min 2)
  *   -s MS   priority sleep interval ms (default: 50)
  *   -t MS   priority burst length ms (default: 10)
+ *   -m N    worker multiplier: prio_count = N × num_cpus (default: off, use -p)
  *   -w N    warmup rounds before measurement (default: 20)
  */
 
@@ -259,6 +260,7 @@ static void usage(const char *prog)
 	    "Usage: %s [options]\n"
 	    "  -d S    measurement duration in seconds (default: 20)\n"
 	    "  -b N    bg workers per hot CPU (default: 4)\n"
+	    "  -m N    prio worker multiplier: N × num_cpus (overrides -p)\n"
 	    "  -p N    priority task count (default: num_cpus/4, min 2)\n"
 	    "  -s MS   priority sleep interval ms (default: 50)\n"
 	    "  -t MS   priority burst length ms (default: 10)\n"
@@ -272,6 +274,7 @@ int main(int argc, char **argv)
 	int duration_s    = 20;
 	int bg_per_hot    = 4;
 	int prio_count    = -1;
+	int multiplier    = -1;
 	int sleep_ms      = 50;
 	int burst_ms      = 10;
 	int warmup_rounds = 20;
@@ -280,16 +283,18 @@ int main(int argc, char **argv)
 		{ "duration",    required_argument, NULL, 'd' },
 		{ "bg-per-hot",  required_argument, NULL, 'b' },
 		{ "prio",        required_argument, NULL, 'p' },
+		{ "multiplier",  required_argument, NULL, 'm' },
 		{ "sleep-ms",    required_argument, NULL, 's' },
 		{ "burst-ms",    required_argument, NULL, 't' },
 		{ "warmup",      required_argument, NULL, 'w' },
 		{ NULL, 0, NULL, 0 }
 	};
 	int c;
-	while ((c = getopt_long(argc, argv, "d:b:p:s:t:w:", long_opts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "d:b:m:p:s:t:w:", long_opts, NULL)) != -1) {
 		switch (c) {
 		case 'd': duration_s    = atoi(optarg); break;
 		case 'b': bg_per_hot    = atoi(optarg); break;
+		case 'm': multiplier    = atoi(optarg); break;
 		case 'p': prio_count    = atoi(optarg); break;
 		case 's': sleep_ms      = atoi(optarg); break;
 		case 't': burst_ms      = atoi(optarg); break;
@@ -307,7 +312,9 @@ int main(int argc, char **argv)
 	int n_hot  = num_cpus / 2;
 	int n_cold = num_cpus - n_hot;
 
-	if (prio_count < 0)
+	if (multiplier > 0)
+		prio_count = multiplier * num_cpus;
+	else if (prio_count < 0)
 		prio_count = num_cpus / 4;
 	if (prio_count < 2)
 		prio_count = 2;
@@ -330,8 +337,12 @@ int main(int argc, char **argv)
 	       num_cpus, n_hot, n_cold);
 	printf("BG workers:    %d  (hot: %d×%d=%d, cold: %d×1=%d)\n",
 	       bg_count, n_hot, bg_per_hot, bg_hot_total, n_cold, bg_cold_total);
-	printf("Prio workers:  %d  (sleep %dms / burst %dms, placed on hot CPUs)\n",
-	       prio_count, sleep_ms, burst_ms);
+	if (multiplier > 0)
+		printf("Prio workers:  %d  (%dx%d CPUs, sleep %dms / burst %dms)\n",
+		       prio_count, multiplier, num_cpus, sleep_ms, burst_ms);
+	else
+		printf("Prio workers:  %d  (sleep %dms / burst %dms, placed on hot CPUs)\n",
+		       prio_count, sleep_ms, burst_ms);
 	printf("Warmup rounds: %d\n", warmup_rounds);
 	printf("Duration:      %ds\n", duration_s);
 	printf("Cambyses:      %s\n\n",
