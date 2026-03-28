@@ -320,13 +320,14 @@ The patch [`patches/0001-sched-fair-add-starvation-aware-migration-candidate-.pa
 Instead of scanning the `cfs_tasks` list from the tail (effectively arbitrary selection), migration candidates are ordered by a **migration suitability score**:
 
 ```
-score = (1024 - (runnable_avg - util_avg)) * weight / 1387
+gap = max(0, runnable_avg - util_avg)    // branchless: gap &= ~(gap >> 31)
+score = gap * inv_weight * 960 >> 32
 ```
 
-- **Heavy tasks** (high `weight`) resolve imbalance efficiently with fewer migrations
+- **Heavy tasks** (small `inv_weight`) resolve imbalance efficiently with fewer migrations
 - **Low-starvation tasks** (small `runnable_avg - util_avg`) are well-served on their current CPU, meaning they are unlikely to need re-migration after being moved
 
-The best candidate (highest score) is retrieved in **O(1)** from a per-rq cached rbtree (`starv_timeline`), ordered descending by score.
+Low score = ideal migration candidate. The best candidate (lowest score) is retrieved in **O(1)** from a per-rq cached rbtree (`starv_timeline`), ordered ascending by score.
 
 ### How It Works
 
@@ -334,7 +335,7 @@ The best candidate (highest score) is retrieved in **O(1)** from a per-rq cached
 |-----------|-------------|
 | `starv_score` (u16) | Per-task score, updated inline in the PELT path (`__update_load_avg_se`) |
 | `starv_node` (rb_node) | Per-SE node in the `starv_timeline` rbtree |
-| `starv_timeline` (rb_root_cached) | Per-rq cached rbtree; leftmost = highest score = best candidate |
+| `starv_timeline` (rb_root_cached) | Per-rq cached rbtree; leftmost = lowest score = best candidate |
 | `detach_tasks_starv()` | Walks the rbtree from leftmost, replacing the vanilla list walk |
 | `sysctl_sched_starv_migrate` | Runtime toggle (default: 1); SMT siblings always use the conventional list walk |
 
@@ -342,7 +343,7 @@ The best candidate (highest score) is retrieved in **O(1)** from a per-rq cached
 
 This patch is a direct descendant of Cambyses's **sig1** (runnable starvation signal), combined with its **sig7** (weighted load) into a single unified score. Where Cambyses used a multi-signal scoring vector with 4-slot configuration, this patch uses a single fixed formula — trading configurability for simplicity and zero-configuration correctness.
 
-The division by 1387 is approximated as `(x * 3095) >> 22`, and the result fits in a `u16` (max ≈ 65531).
+The normalization factor 960 ≈ 65535 × 2³² / (1024 × `sched_prio_to_wmult[39]`) maps the score to the full `u16` range, reaching 65535 at nice 19 with full contention. The `max(0, gap)` is computed branchlessly using the sign-bit mask idiom `gap &= ~(gap >> 31)`, borrowed from the [BORE scheduler](https://github.com/firelzrd/bore-scheduler)'s penalty clamping.
 
 ### Applying
 
