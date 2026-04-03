@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-dot" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="760" height="340" fill="white" rx="4"/>
+
+  <!-- Title -->
+  <text x="380" y="24" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e293b">Cambyses 4-Phase Pipeline</text>
+
+  <!-- Phase 0: Shadow Pre-scoring -->
+  <rect x="12" y="42" width="160" height="130" rx="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="92" y="62" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e293b">Phase 0</text>
+  <text x="92" y="76" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e293b">Shadow Pre-scoring</text>
+  <line x1="42" y1="82" x2="142" y2="82" stroke="#93c5fd" stroke-width="0.8"/>
+  <text x="92" y="97" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#475569" font-style="italic">shadow_exec_start[]</text>
+  <text x="92" y="109" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#475569" font-style="italic">+ shadow_weight[]</text>
+  <text x="92" y="126" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#334155">N tasks → approx scores</text>
+  <text x="92" y="141" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#64748b">No task_struct access</text>
+  <rect x="60" y="150" width="64" height="14" rx="3" fill="#bfdbfe" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="92" y="160" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#1e40af">O(N) scan</text>
+
+  <!-- Arrow 0 → 0.5 -->
+  <line x1="172" y1="107" x2="193" y2="107" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Phase 0.5: Top-K Selection -->
+  <rect x="196" y="42" width="148" height="130" rx="10" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1.2"/>
+  <text x="270" y="62" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e293b">Phase 0.5</text>
+  <text x="270" y="76" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e293b">Top-K Selection</text>
+  <line x1="226" y1="82" x2="314" y2="82" stroke="#a5b4fc" stroke-width="0.8"/>
+  <text x="270" y="100" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#334155">N scores → K=8 best</text>
+  <text x="270" y="114" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#334155">indices</text>
+  <text x="270" y="132" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#64748b">Insertion sort</text>
+  <rect x="238" y="150" width="64" height="14" rx="3" fill="#c7d2fe" stroke="#a5b4fc" stroke-width="0.5"/>
+  <text x="270" y="160" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#3730a3">O(N·K)</text>
+
+  <!-- Arrow 0.5 → 1 -->
+  <line x1="344" y1="107" x2="365" y2="107" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Phase 1: Filter + Exact Score -->
+  <rect x="368" y="42" width="170" height="130" rx="10" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.2"/>
+  <text x="453" y="62" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e293b">Phase 1</text>
+  <text x="453" y="76" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e293b">Filter + Exact Score</text>
+  <line x1="398" y1="82" x2="508" y2="82" stroke="#fcd34d" stroke-width="0.8"/>
+  <text x="453" y="97" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#475569" font-style="italic">can_migrate_task()</text>
+  <text x="453" y="109" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#475569" font-style="italic">+ pul16 score</text>
+  <text x="453" y="126" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#334155">K candidates → M valid</text>
+  <text x="453" y="141" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#64748b">Newidle fallback: Pass 2/3</text>
+  <rect x="421" y="150" width="64" height="14" rx="3" fill="#fde68a" stroke="#fcd34d" stroke-width="0.5"/>
+  <text x="453" y="160" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#92400e">O(K)</text>
+
+  <!-- Arrow 1 → 2 -->
+  <line x1="538" y1="107" x2="559" y2="107" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Phase 2: Argmax + Detach -->
+  <rect x="562" y="42" width="186" height="130" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.2"/>
+  <text x="655" y="62" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e293b">Phase 2</text>
+  <text x="655" y="76" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e293b">Argmax + Detach</text>
+  <line x1="592" y1="82" x2="718" y2="82" stroke="#86efac" stroke-width="0.8"/>
+  <text x="655" y="97" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#475569" font-style="italic">PHMINPOSUW (SSE4.1)</text>
+  <text x="655" y="114" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#334155">Extract best → detach</text>
+  <text x="655" y="131" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#64748b">Score-ordered output</text>
+  <rect x="623" y="150" width="64" height="14" rx="3" fill="#bbf7d0" stroke="#86efac" stroke-width="0.5"/>
+  <text x="655" y="160" text-anchor="middle" font-family="sans-serif" font-size="7.5" fill="#166534">O(1) SIMD</text>
+
+  <!-- Bypass path (dotted) -->
+  <rect x="60" y="210" width="640" height="52" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Bypass arrow: curved path below main flow -->
+  <path d="M 92,172 L 92,224 L 160,224" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" fill="none" marker-end="url(#arrow-dot)"/>
+
+  <!-- Bypass text -->
+  <text x="380" y="232" text-anchor="middle" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b">Bypass: N ≤ K</text>
+  <text x="380" y="247" text-anchor="middle" font-family="sans-serif" font-size="8.5" fill="#94a3b8">Skip Phase 0 / 0.5 → direct scan with prefetch into Phase 1</text>
+
+  <!-- Bypass arrow to Phase 1 -->
+  <path d="M 600,224 L 640,224 L 640,172" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" fill="none" marker-end="url(#arrow-dot)"/>
+
+  <!-- Legend / footer -->
+  <text x="380" y="296" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#94a3b8">N = runqueue length · K = top-K window (default 8) · M = migration-eligible subset</text>
+  <text x="380" y="310" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#94a3b8">pul16 = packed unsigned 16-bit load metric · shadow arrays avoid rq_lock contention</text>
+</svg>

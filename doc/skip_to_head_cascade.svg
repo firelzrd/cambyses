@@ -1,0 +1,218 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="620" viewBox="0 0 760 620">
+  <defs>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#f97316"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: sans-serif; fill: #1e293b; }
+    .title { font-size: 15px; font-weight: bold; }
+    .subtitle { font-size: 11px; fill: #64748b; }
+    .label { font-size: 10px; font-weight: bold; fill: white; text-anchor: middle; dominant-baseline: central; }
+    .label-dark { font-size: 10px; font-weight: bold; fill: #1e3a5f; text-anchor: middle; dominant-baseline: central; }
+    .delta { font-size: 8px; text-anchor: middle; }
+    .phase { font-size: 13px; font-weight: bold; }
+    .head-tail { font-size: 9px; font-weight: bold; fill: #64748b; text-anchor: middle; }
+    .note { font-size: 10px; }
+    .note-bold { font-size: 10px; font-weight: bold; }
+    .action { font-size: 9px; fill: #f97316; font-weight: 600; }
+    .small { font-size: 9px; fill: #64748b; }
+    .mono { font-family: 'SF Mono', Consolas, monospace; font-size: 9px; }
+  </style>
+
+  <rect width="760" height="620" fill="white" rx="4"/>
+
+  <!-- Title -->
+  <text x="380" y="28" text-anchor="middle" class="title">SKIP_TO_HEAD — list_move() Destroys Staleness Ordering</text>
+  <text x="380" y="46" text-anchor="middle" class="subtitle">Tasks failing evaluation are moved to HEAD, corrupting the natural Δt order</text>
+
+  <!-- ==================== PHASE 1: Before scan ==================== -->
+  <g transform="translate(0, 66)">
+    <text x="20" y="14" class="phase">Before scan</text>
+    <text x="20" y="30" class="small">cfs_tasks list in natural Δt order (HEAD = recently ran, TAIL = longest waiting)</text>
+
+    <!-- Delta scale bar -->
+    <rect x="80" y="42" width="580" height="18" rx="3" fill="#f0f9ff" stroke="#bae6fd" stroke-width="1"/>
+    <text x="110" y="54" font-size="8" fill="#0284c7" font-weight="600">Δt 小 (recently ran)</text>
+    <text x="620" y="54" font-size="8" fill="#0284c7" font-weight="600" text-anchor="end">Δt 大 (long waiting)</text>
+    <path d="M160,51 L580,51" stroke="#0284c7" stroke-width="1" marker-end="url(#arrowGray)" opacity="0.4"/>
+
+    <text x="62" y="83" class="head-tail">HEAD</text>
+
+    <!-- Task boxes: H 2ms, L 5ms, H 10ms, L 20ms, H 30ms, L 50ms -->
+    <!-- H 2ms -->
+    <rect x="84" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <text x="112" y="85" class="label">H</text>
+    <text x="112" y="97" class="delta" fill="white">Δt=2ms</text>
+
+    <path d="M142,88 L152,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 5ms -->
+    <rect x="154" y="72" width="56" height="34" rx="4" fill="#93c5fd" stroke="#60a5fa" stroke-width="1"/>
+    <text x="182" y="85" class="label-dark">L</text>
+    <text x="182" y="97" class="delta" fill="#1e3a5f">Δt=5ms</text>
+
+    <path d="M212,88 L222,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 10ms -->
+    <rect x="224" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <text x="252" y="85" class="label">H</text>
+    <text x="252" y="97" class="delta" fill="white">Δt=10ms</text>
+
+    <path d="M282,88 L292,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 20ms -->
+    <rect x="294" y="72" width="56" height="34" rx="4" fill="#93c5fd" stroke="#60a5fa" stroke-width="1"/>
+    <text x="322" y="85" class="label-dark">L</text>
+    <text x="322" y="97" class="delta" fill="#1e3a5f">Δt=20ms</text>
+
+    <path d="M352,88 L362,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 30ms -->
+    <rect x="364" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <text x="392" y="85" class="label">H</text>
+    <text x="392" y="97" class="delta" fill="white">Δt=30ms</text>
+
+    <path d="M422,88 L432,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 50ms -->
+    <rect x="434" y="72" width="56" height="34" rx="4" fill="#93c5fd" stroke="#60a5fa" stroke-width="1"/>
+    <text x="462" y="85" class="label-dark">L</text>
+    <text x="462" y="97" class="delta" fill="#1e3a5f">Δt=50ms</text>
+
+    <text x="510" y="83" class="head-tail">TAIL</text>
+
+    <!-- Checkmark: ordered -->
+    <text x="540" y="92" font-size="11" fill="#16a34a" font-weight="bold">✓ Δt ordering preserved</text>
+  </g>
+
+  <!-- Down arrow -->
+  <path d="M380,186 L380,210" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <text x="400" y="200" class="small">tail scan runs</text>
+
+  <!-- ==================== PHASE 2: During scan ==================== -->
+  <g transform="translate(0, 218)">
+    <text x="20" y="14" class="phase">During scan</text>
+    <text x="20" y="30" class="small">Scan from TAIL. Tasks failing can_migrate_task() are list_move()'d to HEAD</text>
+
+    <text x="62" y="83" class="head-tail">HEAD</text>
+
+    <!-- H 2ms (original position) -->
+    <rect x="84" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <text x="112" y="85" class="label">H</text>
+    <text x="112" y="97" class="delta" fill="white">Δt=2ms</text>
+
+    <path d="M142,88 L152,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 5ms -->
+    <rect x="154" y="72" width="56" height="34" rx="4" fill="#93c5fd" stroke="#60a5fa" stroke-width="1"/>
+    <text x="182" y="85" class="label-dark">L</text>
+    <text x="182" y="97" class="delta" fill="#1e3a5f">Δt=5ms</text>
+
+    <path d="M212,88 L222,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 10ms - SKIP, move to HEAD -->
+    <rect x="224" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#f97316" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="252" y="85" class="label">H</text>
+    <text x="252" y="97" class="delta" fill="white">Δt=10ms</text>
+    <path d="M252,71 C252,52 100,52 100,71" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#arrowOrange)"/>
+    <text x="176" y="48" text-anchor="middle" class="action">list_move() → HEAD</text>
+
+    <path d="M282,88 L292,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 20ms - detached (green) -->
+    <rect x="294" y="72" width="56" height="34" rx="4" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <text x="322" y="85" class="label-dark" fill="#22c55e">L</text>
+    <text x="322" y="97" class="delta" fill="#22c55e">Δt=20ms</text>
+    <text x="322" y="118" font-size="8" fill="#22c55e" text-anchor="middle" font-weight="600">detached ✓</text>
+
+    <path d="M352,88 L362,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 30ms - SKIP, move to HEAD -->
+    <rect x="364" y="72" width="56" height="34" rx="4" fill="#3b82f6" stroke="#f97316" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="392" y="85" class="label">H</text>
+    <text x="392" y="97" class="delta" fill="white">Δt=30ms</text>
+    <path d="M392,71 C392,36 88,36 88,71" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#arrowOrange)"/>
+    <text x="500" y="42" text-anchor="middle" class="action">list_move() → HEAD</text>
+
+    <path d="M422,88 L432,88" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 50ms - detached (green) -->
+    <rect x="434" y="72" width="56" height="34" rx="4" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <text x="462" y="85" class="label-dark" fill="#22c55e">L</text>
+    <text x="462" y="97" class="delta" fill="#22c55e">Δt=50ms</text>
+    <text x="462" y="118" font-size="8" fill="#22c55e" text-anchor="middle" font-weight="600">detached ✓</text>
+
+    <text x="510" y="83" class="head-tail">TAIL</text>
+
+    <!-- scan direction -->
+    <text x="510" y="98" font-size="8" fill="#64748b" font-style="italic">← scan</text>
+  </g>
+
+  <!-- Down arrow -->
+  <path d="M380,338 L380,362" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <text x="400" y="352" class="small">next scan sees</text>
+
+  <!-- ==================== PHASE 3: After scan — corrupted order ==================== -->
+  <g transform="translate(0, 370)">
+    <rect x="10" y="-6" width="740" height="120" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+
+    <text x="20" y="14" class="phase" fill="#dc2626">After scan — Δt ordering destroyed</text>
+    <text x="20" y="30" class="small" fill="#dc2626">Long-waiting tasks moved to HEAD, staleness order is now corrupted</text>
+
+    <text x="62" y="63" class="head-tail">HEAD</text>
+
+    <!-- H 30ms (moved to HEAD! — high delta at HEAD position) -->
+    <rect x="84" y="52" width="56" height="34" rx="4" fill="#3b82f6" stroke="#dc2626" stroke-width="2"/>
+    <text x="112" y="65" class="label">H</text>
+    <text x="112" y="77" class="delta" fill="white">Δt=30ms</text>
+    <text x="112" y="100" font-size="7" fill="#dc2626" text-anchor="middle" font-weight="bold">High Δt stuck at HEAD!</text>
+
+    <path d="M142,68 L152,68" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 10ms (moved to HEAD) -->
+    <rect x="154" y="52" width="56" height="34" rx="4" fill="#3b82f6" stroke="#dc2626" stroke-width="2"/>
+    <text x="182" y="65" class="label">H</text>
+    <text x="182" y="77" class="delta" fill="white">Δt=10ms</text>
+
+    <path d="M212,68 L222,68" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- H 2ms (original, now at middle) -->
+    <rect x="224" y="52" width="56" height="34" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="1"/>
+    <text x="252" y="65" class="label">H</text>
+    <text x="252" y="77" class="delta" fill="white">Δt=2ms</text>
+
+    <path d="M282,68 L292,68" stroke="#cbd5e1" stroke-width="1"/>
+
+    <!-- L 5ms (at TAIL now — shortest wait among remaining!) -->
+    <rect x="294" y="52" width="56" height="34" rx="4" fill="#93c5fd" stroke="#60a5fa" stroke-width="1"/>
+    <text x="322" y="65" class="label-dark">L</text>
+    <text x="322" y="77" class="delta" fill="#1e3a5f">Δt=5ms</text>
+
+    <text x="370" y="63" class="head-tail">TAIL</text>
+
+    <!-- Corrupted order indicator -->
+    <g transform="translate(400, 48)">
+      <text x="0" y="10" class="note-bold" fill="#dc2626">Resulting Δt order: 30, 10, 2, 5</text>
+      <text x="0" y="26" class="note" fill="#dc2626">Next tail scan picks L with Δt=5ms —</text>
+      <text x="0" y="42" class="note" fill="#dc2626">H with Δt=30ms is buried at HEAD, unreachable</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION BOX ==================== -->
+  <g transform="translate(0, 498)">
+    <rect x="20" y="0" width="720" height="110" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+    <rect x="20" y="0" width="720" height="4" rx="2" fill="#64748b"/>
+
+    <text x="36" y="24" class="note-bold">Core problem:</text>
+    <text x="36" y="40" class="note">list_move() sends failed tasks to HEAD, destroying the natural Δt (staleness) ordering of the list.</text>
+    <text x="36" y="56" class="note">The stalest tasks (best migration candidates) accumulate at HEAD, unreachable from the tail scan.</text>
+    <text x="36" y="72" class="note">Result: positional selection becomes uncorrelated with Δt, further degrading selection quality.</text>
+
+    <text x="36" y="94" class="note-bold" fill="#16a34a">Cambyses: No list_move(). svec keeps all tasks always scoreable. Position-independent selection.</text>
+  </g>
+</svg>

@@ -1,12 +1,12 @@
 CFLAGS := -O2 -Wall -Wextra -std=gnu11 -pthread
 LDFLAGS := -lm
 
-all: response_lat
+all: selection_bench
 
-response_lat: response_lat.c
+selection_bench: selection_bench.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 clean:
-	rm -f response_lat
+	rm -f selection_bench
 
 .PHONY: all clean

@@ -1,0 +1,262 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="820" viewBox="0 0 760 820">
+  <defs>
+    <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="760" height="820" fill="white"/>
+
+  <!-- ============================================================ -->
+  <!-- TOP SECTION: Linked List -->
+  <!-- ============================================================ -->
+  <rect x="10" y="10" width="740" height="330" rx="8" fill="#fff7f7" stroke="#fca5a5" stroke-width="1.5"/>
+  <text x="380" y="38" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Linked List (cfs_tasks)</text>
+  <text x="380" y="56" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#ef4444" font-style="italic">Pointer chase: unknown next address -- no prefetch possible</text>
+
+  <!-- Linked list nodes scattered across the SVG to show non-contiguous memory -->
+  <!-- Node 0 -->
+  <rect x="40" y="80" width="80" height="55" rx="5" fill="#fecaca" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="80" y="99" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">task_struct</text>
+  <text x="80" y="112" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">exec_start</text>
+  <text x="80" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">weight, *next</text>
+  <!-- Cache miss X -->
+  <text x="55" y="78" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ef4444">X</text>
+  <text x="42" y="78" font-family="sans-serif" font-size="8" fill="#ef4444">miss</text>
+
+  <!-- Curved arrow to Node 1 -->
+  <path d="M120,107 C145,70 155,70 180,100" fill="none" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)" stroke-dasharray="4,2"/>
+
+  <!-- Node 1 (offset vertically to show scattered memory) -->
+  <rect x="180" y="90" width="80" height="55" rx="5" fill="#fecaca" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="220" y="109" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">task_struct</text>
+  <text x="220" y="122" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">exec_start</text>
+  <text x="220" y="133" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">weight, *next</text>
+  <text x="195" y="88" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ef4444">X</text>
+  <text x="182" y="88" font-family="sans-serif" font-size="8" fill="#ef4444">miss</text>
+
+  <!-- Curved arrow to Node 2 -->
+  <path d="M260,117 C290,160 310,160 330,115" fill="none" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)" stroke-dasharray="4,2"/>
+
+  <!-- Node 2 -->
+  <rect x="330" y="85" width="80" height="55" rx="5" fill="#fecaca" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="370" y="104" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">task_struct</text>
+  <text x="370" y="117" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">exec_start</text>
+  <text x="370" y="128" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">weight, *next</text>
+  <text x="345" y="83" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ef4444">X</text>
+  <text x="332" y="83" font-family="sans-serif" font-size="8" fill="#ef4444">miss</text>
+
+  <!-- Curved arrow to Node 3 -->
+  <path d="M410,112 C435,65 460,65 485,105" fill="none" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)" stroke-dasharray="4,2"/>
+
+  <!-- Node 3 -->
+  <rect x="485" y="75" width="80" height="55" rx="5" fill="#fecaca" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="525" y="94" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">task_struct</text>
+  <text x="525" y="107" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">exec_start</text>
+  <text x="525" y="118" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">weight, *next</text>
+  <text x="500" y="73" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ef4444">X</text>
+  <text x="487" y="73" font-family="sans-serif" font-size="8" fill="#ef4444">miss</text>
+
+  <!-- Curved arrow to Node 4 -->
+  <path d="M565,102 C595,150 615,150 640,108" fill="none" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)" stroke-dasharray="4,2"/>
+
+  <!-- Node 4 -->
+  <rect x="635" y="80" width="80" height="55" rx="5" fill="#fecaca" stroke="#ef4444" stroke-width="1.2"/>
+  <text x="675" y="99" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">task_struct</text>
+  <text x="675" y="112" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">exec_start</text>
+  <text x="675" y="123" text-anchor="middle" font-family="monospace" font-size="8" fill="#64748b">weight, *next</text>
+  <text x="650" y="78" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ef4444">X</text>
+  <text x="637" y="78" font-family="sans-serif" font-size="8" fill="#ef4444">miss</text>
+
+  <!-- Memory layout illustration showing scattered addresses -->
+  <text x="380" y="165" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#1e293b">Memory Layout (scattered)</text>
+
+  <rect x="30" y="175" width="700" height="30" rx="3" fill="#fef2f2" stroke="#fca5a5" stroke-width="0.8"/>
+  <!-- Memory blocks scattered -->
+  <rect x="45" y="180" width="55" height="20" rx="2" fill="#fecaca" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="72" y="194" text-anchor="middle" font-family="monospace" font-size="7" fill="#1e293b">0x3a80</text>
+  <rect x="150" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="195" y="180" width="55" height="20" rx="2" fill="#fecaca" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="222" y="194" text-anchor="middle" font-family="monospace" font-size="7" fill="#1e293b">0xf140</text>
+  <rect x="280" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="310" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="365" y="180" width="55" height="20" rx="2" fill="#fecaca" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="392" y="194" text-anchor="middle" font-family="monospace" font-size="7" fill="#1e293b">0x7c00</text>
+  <rect x="460" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="490" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="530" y="180" width="55" height="20" rx="2" fill="#fecaca" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="557" y="194" text-anchor="middle" font-family="monospace" font-size="7" fill="#1e293b">0x2e40</text>
+  <rect x="620" y="180" width="12" height="20" rx="2" fill="#e2e8f0"/>
+  <rect x="660" y="180" width="55" height="20" rx="2" fill="#fecaca" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="687" y="194" text-anchor="middle" font-family="monospace" font-size="7" fill="#1e293b">0xd580</text>
+  <text x="380" y="222" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#94a3b8">...other data between nodes (cache pollution)...</text>
+
+  <!-- Per-node cost breakdown -->
+  <rect x="80" y="240" width="600" height="85" rx="5" fill="white" stroke="#fca5a5" stroke-width="1"/>
+  <text x="380" y="258" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">Per-task cache misses (demand loads)</text>
+  <text x="100" y="276" font-family="monospace" font-size="9" fill="#ef4444">1. load se-&gt;next          → cache miss (~200 cyc)</text>
+  <text x="100" y="290" font-family="monospace" font-size="9" fill="#ef4444">2. load se-&gt;exec_start    → cache miss (~200 cyc)</text>
+  <text x="100" y="304" font-family="monospace" font-size="9" fill="#ef4444">3. load se-&gt;weight        → cache miss (~200 cyc)</text>
+  <text x="100" y="318" font-family="monospace" font-size="9" fill="#ef4444">4-5. load other fields    → cache miss (~200 cyc each)</text>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM SECTION: svec + Shadow Arrays -->
+  <!-- ============================================================ -->
+  <rect x="10" y="350" width="740" height="345" rx="8" fill="#f0f7ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="380" y="378" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#1e293b">svec + Shadow Arrays</text>
+  <text x="380" y="396" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e" font-style="italic">Sequential access: 2-level prefetch (L3 far-ahead + L1 near-ahead)</text>
+
+  <!-- Array 1: svec[] -->
+  <text x="30" y="425" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">svec[] (pointers)</text>
+  <g>
+    <rect x="30" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="62" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p0</text>
+    <rect x="95" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="127" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p1</text>
+    <rect x="160" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="192" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p2</text>
+    <rect x="225" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="257" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p3</text>
+    <rect x="290" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="322" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p4</text>
+    <rect x="355" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="387" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p5</text>
+    <rect x="420" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="452" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p6</text>
+    <rect x="485" y="430" width="65" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="517" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">p7</text>
+    <rect x="555" y="430" width="55" height="28" rx="3" fill="#dbeafe" stroke="#3b82f6" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>
+    <text x="582" y="448" text-anchor="middle" font-family="monospace" font-size="9" fill="#94a3b8">...</text>
+    <!-- Cache line bracket -->
+    <line x1="30" y1="462" x2="550" y2="462" stroke="#3b82f6" stroke-width="1.5"/>
+    <line x1="30" y1="459" x2="30" y2="465" stroke="#3b82f6" stroke-width="1.5"/>
+    <line x1="550" y1="459" x2="550" y2="465" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="290" y="474" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#3b82f6">64-byte cache line = 8 x u64 pointers</text>
+    <!-- Green checkmarks -->
+    <text x="62" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="127" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="192" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="257" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="322" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="387" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="452" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="517" y="428" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+  </g>
+
+  <!-- Array 2: shadow_exec_start[] -->
+  <text x="30" y="496" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">shadow_exec_start[]</text>
+  <g>
+    <rect x="30" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="62" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts0</text>
+    <rect x="95" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="127" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts1</text>
+    <rect x="160" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="192" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts2</text>
+    <rect x="225" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="257" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts3</text>
+    <rect x="290" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="322" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts4</text>
+    <rect x="355" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="387" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts5</text>
+    <rect x="420" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="452" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts6</text>
+    <rect x="485" y="501" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="517" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">ts7</text>
+    <rect x="555" y="501" width="55" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>
+    <text x="582" y="519" text-anchor="middle" font-family="monospace" font-size="9" fill="#94a3b8">...</text>
+    <!-- Cache line bracket -->
+    <line x1="30" y1="533" x2="550" y2="533" stroke="#6366f1" stroke-width="1.5"/>
+    <line x1="30" y1="530" x2="30" y2="536" stroke="#6366f1" stroke-width="1.5"/>
+    <line x1="550" y1="530" x2="550" y2="536" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="290" y="545" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#6366f1">64-byte cache line = 8 x u64 timestamps</text>
+    <text x="62" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="127" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="192" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="257" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="322" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="387" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="452" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="517" y="499" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+  </g>
+
+  <!-- Array 3: shadow_weight[] -->
+  <text x="30" y="564" font-family="sans-serif" font-size="10" font-weight="bold" fill="#1e293b">shadow_weight[]</text>
+  <g>
+    <rect x="30" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="62" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w0</text>
+    <rect x="95" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="127" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w1</text>
+    <rect x="160" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="192" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w2</text>
+    <rect x="225" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="257" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w3</text>
+    <rect x="290" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="322" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w4</text>
+    <rect x="355" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="387" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w5</text>
+    <rect x="420" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="452" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w6</text>
+    <rect x="485" y="569" width="65" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="1"/>
+    <text x="517" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#1e293b">w7</text>
+    <rect x="555" y="569" width="55" height="28" rx="3" fill="#e0e7ff" stroke="#6366f1" stroke-width="0.8" stroke-dasharray="3,2" opacity="0.6"/>
+    <text x="582" y="587" text-anchor="middle" font-family="monospace" font-size="9" fill="#94a3b8">...</text>
+    <!-- Cache line bracket -->
+    <line x1="30" y1="601" x2="550" y2="601" stroke="#6366f1" stroke-width="1.5"/>
+    <line x1="30" y1="598" x2="30" y2="604" stroke="#6366f1" stroke-width="1.5"/>
+    <line x1="550" y1="598" x2="550" y2="604" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="290" y="613" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#6366f1">64-byte cache line = 8 x u64 weights</text>
+    <text x="62" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="127" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="192" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="257" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="322" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="387" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="452" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+    <text x="517" y="567" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#22c55e">&#x2713;</text>
+  </g>
+
+  <!-- Prefetch arrows -->
+  <!-- Current position indicator -->
+  <rect x="28" y="625" width="69" height="3" rx="1" fill="#22c55e" opacity="0.8"/>
+  <text x="62" y="638" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="bold" fill="#22c55e">current</text>
+
+  <!-- prefetcht0 arrow (8-ahead, short) -->
+  <line x1="70" y1="648" x2="520" y2="648" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <rect x="200" y="640" width="180" height="16" rx="3" fill="white" stroke="#22c55e" stroke-width="0.8"/>
+  <text x="290" y="652" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#22c55e">prefetcht0 (8-ahead &#x2192; L1)</text>
+
+  <!-- prefetcht2 arrow (16-ahead, long) -->
+  <line x1="70" y1="668" x2="720" y2="668" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowBlue)"/>
+  <rect x="300" y="660" width="195" height="16" rx="3" fill="white" stroke="#3b82f6" stroke-width="0.8"/>
+  <text x="397" y="672" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#3b82f6">prefetcht2 (16-ahead &#x2192; L3)</text>
+
+  <!-- ============================================================ -->
+  <!-- KEY METRICS BOX -->
+  <!-- ============================================================ -->
+  <rect x="10" y="705" width="740" height="105" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="380" y="728" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1e293b">Key Metrics</text>
+
+  <!-- Linked list cost -->
+  <circle cx="40" cy="750" r="6" fill="#fecaca" stroke="#ef4444" stroke-width="1"/>
+  <text x="55" y="754" font-family="monospace" font-size="11" fill="#1e293b">Linked list:    ~5 demand misses/task x 200 cyc = </text>
+  <text x="530" y="754" font-family="monospace" font-size="11" font-weight="bold" fill="#ef4444">~1000 cyc</text>
+
+  <!-- svec cost -->
+  <circle cx="40" cy="774" r="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="55" y="778" font-family="monospace" font-size="11" fill="#1e293b">svec + shadow:  ~1 demand miss/task  x  12 cyc = </text>
+  <text x="530" y="778" font-family="monospace" font-size="11" font-weight="bold" fill="#22c55e">~12 cyc</text>
+
+  <!-- Reduction -->
+  <rect x="440" y="790" width="280" height="22" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+  <text x="580" y="805" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#16a34a">Cache miss reduction: -80%</text>
+</svg>

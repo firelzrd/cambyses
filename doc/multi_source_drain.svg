@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="920" viewBox="0 0 760 920">
+  <style>
+    text { font-family: sans-serif; fill: #1e293b; }
+    .title { font-size: 16px; font-weight: bold; }
+    .subtitle { font-size: 13px; font-weight: 600; }
+    .label { font-size: 11px; }
+    .small { font-size: 10px; }
+    .tiny { font-size: 9px; }
+    .bold { font-weight: bold; }
+    .red { fill: #dc2626; }
+    .green { fill: #16a34a; }
+    .gray { fill: #94a3b8; }
+    .white { fill: #ffffff; }
+    .annotation { font-size: 11px; fill: #475569; }
+    .step-num { font-size: 11px; font-weight: bold; fill: #ffffff; }
+    .step-text { font-size: 11px; fill: #334155; }
+    .safety { font-size: 10.5px; fill: #475569; font-style: italic; }
+    .cutoff { font-size: 11px; fill: #7c3aed; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="760" height="920" fill="#ffffff" rx="6"/>
+
+  <!-- ============================================================ -->
+  <!-- TOP SECTION: Vanilla -->
+  <!-- ============================================================ -->
+  <rect x="20" y="16" width="720" height="260" rx="8" fill="#fafafa" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="380" y="44" text-anchor="middle" class="title">Vanilla: Single Source, Give Up</text>
+
+  <!-- Dest CPU (idle, grayed) -->
+  <rect x="120" y="80" width="120" height="54" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" opacity="0.5"/>
+  <text x="180" y="103" text-anchor="middle" class="subtitle gray">dest CPU</text>
+  <text x="180" y="120" text-anchor="middle" class="small gray">(idle, waiting)</text>
+
+  <!-- Arrow from busiest to dest -->
+  <line x1="500" y1="107" x2="250" y2="107" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowGray)"/>
+
+  <!-- Busiest CPU (failed) -->
+  <rect x="510" y="80" width="140" height="54" rx="6" fill="#fecaca" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="580" y="103" text-anchor="middle" class="subtitle">busiest CPU</text>
+  <text x="580" y="120" text-anchor="middle" class="small red">all pinned / non-migr.</text>
+
+  <!-- Red X on the arrow -->
+  <circle cx="375" cy="107" r="14" fill="#dc2626"/>
+  <text x="375" y="112" text-anchor="middle" class="step-num" style="font-size:16px">X</text>
+
+  <!-- Failure annotation -->
+  <text x="375" y="85" text-anchor="middle" class="label red bold">0 tasks moved</text>
+
+  <!-- Result box -->
+  <rect x="150" y="160" width="460" height="46" rx="6" fill="#fff1f2" stroke="#fecaca" stroke-width="1"/>
+  <text x="380" y="180" text-anchor="middle" class="subtitle red">dest CPU stays idle until next balance tick</text>
+  <text x="380" y="196" text-anchor="middle" class="small" style="fill:#64748b">Wasted opportunity: other busy CPUs had migratable tasks</text>
+
+  <!-- Separator arrow -->
+  <text x="380" y="240" text-anchor="middle" class="label" style="fill:#64748b; font-size:20px">&#x25BC;</text>
+  <text x="380" y="260" text-anchor="middle" class="small" style="fill:#64748b">Cambyses improves this</text>
+
+  <!-- ============================================================ -->
+  <!-- BOTTOM SECTION: Cambyses -->
+  <!-- ============================================================ -->
+  <rect x="20" y="290" width="720" height="420" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="380" y="318" text-anchor="middle" class="title">Cambyses: Multi-Source Drain</text>
+
+  <!-- Dest CPU (center) -->
+  <rect x="300" y="340" width="160" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="380" y="365" text-anchor="middle" class="subtitle">dest CPU</text>
+  <text x="380" y="381" text-anchor="middle" class="small" style="fill:#92400e">(idle, pulling work)</text>
+
+  <!-- CPU 0: busiest, failed (left) -->
+  <rect x="40" y="440" width="150" height="70" rx="6" fill="#fecaca" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="115" y="462" text-anchor="middle" class="subtitle">CPU 0</text>
+  <text x="115" y="478" text-anchor="middle" class="small">(busiest, load=80)</text>
+  <text x="115" y="500" text-anchor="middle" class="tiny red bold">tried first, 0 moved</text>
+
+  <!-- Arrow CPU 0 → dest (failed) -->
+  <line x1="175" y1="440" x2="310" y2="395" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowRed)"/>
+  <circle cx="240" cy="418" r="10" fill="#dc2626"/>
+  <text x="240" y="422" text-anchor="middle" class="step-num" style="font-size:12px">X</text>
+  <text x="240" y="408" text-anchor="middle" class="tiny red bold">pinned</text>
+
+  <!-- Circled 1 near CPU 0 -->
+  <circle cx="58" y="438" r="9" fill="#3b82f6"/>
+  <text x="58" y="442" text-anchor="middle" class="step-num">1</text>
+
+  <!-- CPU 3: 2nd busiest, success (right) -->
+  <rect x="290" y="450" width="180" height="70" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="380" y="472" text-anchor="middle" class="subtitle green">CPU 3</text>
+  <text x="380" y="488" text-anchor="middle" class="small">(2nd busiest, load=65)</text>
+  <text x="380" y="506" text-anchor="middle" class="tiny green bold">tasks available, moved!</text>
+
+  <!-- Green arrow CPU 3 → dest -->
+  <path d="M380,450 L380,405" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+
+  <!-- Task block on green arrow -->
+  <rect x="362" y="420" width="36" height="18" rx="3" fill="#16a34a"/>
+  <text x="380" y="433" text-anchor="middle" class="white" style="font-size:9px; font-weight:bold">task</text>
+
+  <!-- Circled 2 near CPU 3 -->
+  <circle cx="285" cy="453" r="9" fill="#3b82f6"/>
+  <text x="285" y="457" text-anchor="middle" class="step-num">2</text>
+
+  <!-- CPU 7: 3rd, skipped (far right) -->
+  <rect x="540" y="440" width="160" height="70" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5" opacity="0.5"/>
+  <text x="620" y="462" text-anchor="middle" class="subtitle gray">CPU 7</text>
+  <text x="620" y="478" text-anchor="middle" class="small gray">(3rd, load=30)</text>
+  <text x="620" y="500" text-anchor="middle" class="tiny gray">load ≤ avg, skipped</text>
+
+  <!-- Dashed line CPU 7 → dest (not used) -->
+  <line x1="555" y1="440" x2="450" y2="395" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,4" opacity="0.4"/>
+  <text x="510" y="410" text-anchor="middle" class="tiny gray">skip</text>
+
+  <!-- Diminishing returns cutoff -->
+  <rect x="80" y="540" width="600" height="32" rx="5" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="380" y="561" text-anchor="middle" class="cutoff">Diminishing returns cutoff: 50% &#x2192; 25% &#x2192; 12.5% &#x2192; ...</text>
+
+  <!-- Load order bar -->
+  <text x="380" y="595" text-anchor="middle" class="small" style="fill:#64748b">Source scan order (descending load):</text>
+  <rect x="100" y="605" width="560" height="20" rx="4" fill="#e2e8f0"/>
+  <!-- Segments -->
+  <rect x="100" y="605" width="180" height="20" rx="4" fill="#fecaca"/>
+  <text x="190" y="619" text-anchor="middle" class="tiny bold">CPU 0 (80)</text>
+  <rect x="280" y="605" width="160" height="20" fill="#dcfce7"/>
+  <text x="360" y="619" text-anchor="middle" class="tiny bold green">CPU 3 (65)</text>
+  <rect x="440" y="605" width="100" height="20" fill="#e2e8f0"/>
+  <text x="490" y="619" text-anchor="middle" class="tiny gray">CPU 7 (30)</text>
+  <rect x="540" y="605" width="120" height="20" rx="4" fill="#f1f5f9"/>
+  <text x="600" y="619" text-anchor="middle" class="tiny gray">... others</text>
+  <!-- Avg line -->
+  <line x1="460" y1="600" x2="460" y2="630" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="460" y="644" text-anchor="middle" class="tiny" style="fill:#7c3aed; font-weight:600">&#x25B2; avg_load</text>
+
+  <!-- ============================================================ -->
+  <!-- FLOW STEPS -->
+  <!-- ============================================================ -->
+  <rect x="20" y="720" width="720" height="145" rx="8" fill="#f0f9ff" stroke="#bae6fd" stroke-width="1"/>
+  <text x="380" y="744" text-anchor="middle" class="subtitle" style="fill:#0369a1">Algorithm Steps</text>
+
+  <!-- Step 1 -->
+  <circle cx="50" cy="770" r="10" fill="#3b82f6"/>
+  <text x="50" y="774" text-anchor="middle" class="step-num">1</text>
+  <text x="68" y="774" class="step-text">Compute group average load</text>
+
+  <!-- Step 2 -->
+  <circle cx="50" cy="795" r="10" fill="#3b82f6"/>
+  <text x="50" y="799" text-anchor="middle" class="step-num">2</text>
+  <text x="68" y="799" class="step-text">Mask out tried CPU, find next busiest in group</text>
+
+  <!-- Step 3 -->
+  <circle cx="50" cy="820" r="10" fill="#3b82f6"/>
+  <text x="50" y="824" text-anchor="middle" class="step-num">3</text>
+  <text x="68" y="824" class="step-text">Skip if src_load &#x2264; avg_load (not worth pulling from)</text>
+
+  <!-- Step 4 -->
+  <circle cx="400" cy="770" r="10" fill="#3b82f6"/>
+  <text x="400" y="774" text-anchor="middle" class="step-num">4</text>
+  <text x="418" y="774" class="step-text">Detach with full remaining budget</text>
+
+  <!-- Step 5 -->
+  <circle cx="400" cy="795" r="10" fill="#3b82f6"/>
+  <text x="400" y="799" text-anchor="middle" class="step-num">5</text>
+  <text x="418" y="799" class="step-text">Stop if any task moved OR diminishing returns</text>
+
+  <!-- ============================================================ -->
+  <!-- SAFETY NOTE -->
+  <!-- ============================================================ -->
+  <rect x="20" y="878" width="720" height="32" rx="6" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+  <text x="38" y="898" class="safety">&#x26A0; Over-drain is safe: source retains &#x2265;1 task, newidle_balance self-corrects on the next wakeup path.</text>
+</svg>
