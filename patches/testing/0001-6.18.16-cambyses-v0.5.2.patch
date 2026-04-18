@@ -1,7 +1,7 @@
-From fb84de072e9906fec6dc9d80b46b7657784361f1 Mon Sep 17 00:00:00 2001
+From 9e8939de381678e7bde57a54379e0aa73240444c Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Sat, 4 Apr 2026 20:15:24 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.5.1
+Date: Sat, 18 Apr 2026 12:52:26 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.5.2
 
 ---
  include/linux/sched.h              |    5 +-
@@ -347,7 +347,7 @@ index 8ae86371dd..11e8c835e8 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..9e77f36c8c
+index 0000000000..93d9f0b5c8
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
 @@ -0,0 +1,1032 @@
@@ -375,7 +375,7 @@ index 0000000000..9e77f36c8c
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.5.1"
++#define CAMBYSES_VERSION  "0.5.2"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -393,7 +393,7 @@ index 0000000000..9e77f36c8c
 + *   1: drop budget check (allow overshoot, still respect cache-hot)
 + *   2: drop budget + cache-hot (any movable task)
 + */
-+static unsigned int sysctl_cambyses_newidle_fallback = 2;
++static unsigned int sysctl_cambyses_newidle_fallback = 1;
 +
 +/*
 + * Weight emphasis coefficient for task scoring.
