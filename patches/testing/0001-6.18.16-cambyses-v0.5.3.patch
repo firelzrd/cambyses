@@ -1,22 +1,22 @@
-From 9e8939de381678e7bde57a54379e0aa73240444c Mon Sep 17 00:00:00 2001
+From ef33cbce090563127617d50ee1fe9ee11ea8fa52 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Sat, 18 Apr 2026 12:52:26 +0900
-Subject: [PATCH] 6.18.16-cambyses-v0.5.2
+Date: Sat, 18 Apr 2026 13:27:30 +0900
+Subject: [PATCH] 6.18.16-cambyses-v0.5.3
 
 ---
  include/linux/sched.h              |    5 +-
  include/linux/svec.h               |  205 ++++++
  init/Kconfig                       |   38 +
  kernel/sched/Makefile              |   30 +
- kernel/sched/cambyses.c            | 1032 ++++++++++++++++++++++++++++
- kernel/sched/cambyses.h            |  137 ++++
+ kernel/sched/cambyses.c            | 1076 ++++++++++++++++++++++++++++
+ kernel/sched/cambyses.h            |  140 ++++
  kernel/sched/cambyses_simd_avx2.c  |  190 +++++
  kernel/sched/cambyses_simd_neon.c  |  137 ++++
  kernel/sched/cambyses_simd_ssse3.c |  283 ++++++++
  kernel/sched/core.c                |    7 +
- kernel/sched/fair.c                |  247 ++++++-
+ kernel/sched/fair.c                |  248 ++++++-
  kernel/sched/sched.h               |   12 +
- 12 files changed, 2320 insertions(+), 3 deletions(-)
+ 12 files changed, 2368 insertions(+), 3 deletions(-)
  create mode 100644 include/linux/svec.h
  create mode 100644 kernel/sched/cambyses.c
  create mode 100644 kernel/sched/cambyses.h
@@ -347,10 +347,10 @@ index 8ae86371dd..11e8c835e8 100644
 +endif # CONFIG_SCHED_CAMBYSES_SIMD
 diff --git a/kernel/sched/cambyses.c b/kernel/sched/cambyses.c
 new file mode 100644
-index 0000000000..93d9f0b5c8
+index 0000000000..36454ec94b
 --- /dev/null
 +++ b/kernel/sched/cambyses.c
-@@ -0,0 +1,1032 @@
+@@ -0,0 +1,1076 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -375,7 +375,7 @@ index 0000000000..93d9f0b5c8
 +#define CAMBYSES_PROGNAME "Cambyses Migration Selector"
 +#define CAMBYSES_AUTHOR   "Masahito Suzuki"
 +
-+#define CAMBYSES_VERSION  "0.5.2"
++#define CAMBYSES_VERSION  "0.5.3"
 +
 +/* Runtime toggle — NOP-patched when disabled */
 +DEFINE_STATIC_KEY_TRUE(sched_cambyses);
@@ -409,6 +409,13 @@ index 0000000000..93d9f0b5c8
 + * Higher values make the scorer prefer heavier tasks over long-starved
 + * light tasks, improving heavy-task migration rates.
 + */
++/*
++ * Multi-source drain — after pulling from the busiest CPU, continue
++ * draining additional above-average CPUs in the same group.
++ * Disabled by default; enable via sysctl kernel.sched_cambyses_multisource_drain
++ */
++DEFINE_STATIC_KEY_FALSE(cambyses_multisource_drain);
++
 +static unsigned int sysctl_cambyses_weight_coeff = 308;
 +static int cambyses_weight_coeff_max = 1024;
 +
@@ -1341,6 +1348,36 @@ index 0000000000..93d9f0b5c8
 +	return 0;
 +}
 +
++static int cambyses_multisource_drain_handler(const struct ctl_table *table,
++					      int write, void *buffer,
++					      size_t *lenp, loff_t *ppos)
++{
++	static u8 cambyses_multisource_drain_val;
++	struct ctl_table tmp = {
++		.data	= &cambyses_multisource_drain_val,
++		.maxlen	= sizeof(u8),
++		.mode	= table->mode,
++		.extra1	= SYSCTL_ZERO,
++		.extra2	= SYSCTL_ONE,
++	};
++	int ret;
++
++	if (!write)
++		cambyses_multisource_drain_val =
++			static_key_enabled(&cambyses_multisource_drain);
++
++	ret = proc_dou8vec_minmax(&tmp, write, buffer, lenp, ppos);
++	if (ret || !write)
++		return ret;
++
++	if (cambyses_multisource_drain_val)
++		static_branch_enable(&cambyses_multisource_drain);
++	else
++		static_branch_disable(&cambyses_multisource_drain);
++
++	return 0;
++}
++
 +static struct ctl_table sched_cambyses_sysctls[] = {
 +	{
 +		.procname	= "sched_cambyses",
@@ -1366,6 +1403,13 @@ index 0000000000..93d9f0b5c8
 +		.extra2		= SYSCTL_TWO,
 +	},
 +	{
++		.procname	= "sched_cambyses_multisource_drain",
++		.data		= NULL,
++		.maxlen		= sizeof(u8),
++		.mode		= 0644,
++		.proc_handler	= cambyses_multisource_drain_handler,
++	},
++	{
 +		.procname	= "sched_cambyses_weight_coeff",
 +		.data		= &sysctl_cambyses_weight_coeff,
 +		.maxlen		= sizeof(unsigned int),
@@ -1385,10 +1429,10 @@ index 0000000000..93d9f0b5c8
 +#endif /* CONFIG_SYSCTL */
 diff --git a/kernel/sched/cambyses.h b/kernel/sched/cambyses.h
 new file mode 100644
-index 0000000000..9b3a59b8eb
+index 0000000000..a6d880f596
 --- /dev/null
 +++ b/kernel/sched/cambyses.h
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,140 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * Cambyses — Context-Aware Migration Balancer Yielding Scored Entity Selection
@@ -1418,6 +1462,9 @@ index 0000000000..9b3a59b8eb
 +
 +/* Debug trace static key */
 +extern struct static_key_false cambyses_debug;
++
++/* Multi-source drain static key */
++extern struct static_key_false cambyses_multisource_drain;
 +
 +/*
 + * SIMD support — separate TUs to prevent auto-vectorization contamination.
@@ -2187,7 +2234,7 @@ index 582c3847f4..b653b81cc6 100644
  		rq_attach_root(rq, &def_root_domain);
  #ifdef CONFIG_NO_HZ_COMMON
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 82038166d7..c803d928fa 100644
+index 82038166d7..f69de5bef8 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -58,6 +58,11 @@
@@ -2434,7 +2481,7 @@ index 82038166d7..c803d928fa 100644
  	struct cpumask *cpus = this_cpu_cpumask_var_ptr(load_balance_mask);
  	struct lb_env env = {
  		.sd		= sd,
-@@ -11852,6 +12005,86 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
+@@ -11852,6 +12005,87 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
  			goto more_balance;
  		}
  
@@ -2459,6 +2506,7 @@ index 82038166d7..c803d928fa 100644
 +		 * or when the next candidate's load <= avg_load.
 +		 */
 +		if (static_branch_likely(&sched_cambyses) &&
++		    static_branch_unlikely(&cambyses_multisource_drain) &&
 +		    env.imbalance > 0) {
 +			unsigned long src_load, moved;
 +
@@ -2521,7 +2569,7 @@ index 82038166d7..c803d928fa 100644
  		/*
  		 * We failed to reach balance because of affinity.
  		 */
-@@ -11876,6 +12109,12 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
+@@ -11876,6 +12110,12 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
  			if (!cpumask_subset(cpus, env.dst_grpmask)) {
  				env.loop = 0;
  				env.loop_break = SCHED_NR_MIGRATE_BREAK;
@@ -2534,7 +2582,7 @@ index 82038166d7..c803d928fa 100644
  				goto redo;
  			}
  			goto out_all_pinned;
-@@ -11995,6 +12234,10 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
+@@ -11995,6 +12235,10 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
  	if (need_unlock)
  		atomic_set_release(&sched_balance_running, 0);
  
