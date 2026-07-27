@@ -1,12 +1,10 @@
-CFLAGS := -O2 -Wall -Wextra -std=gnu11 -pthread
-LDFLAGS := -lm
+# mixbench: multi-class discriminating workload for the load-balance A/B.
+CFLAGS ?= -O2 -Wall
+LDLIBS = -lpthread
 
-all: selection_bench
-
-selection_bench: selection_bench.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+mixbench: mixbench.c
 
 clean:
-	rm -f selection_bench
+	rm -f mixbench
 
-.PHONY: all clean
+.PHONY: clean
