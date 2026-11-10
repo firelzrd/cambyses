@@ -1,18 +1,18 @@
-From 19331ed9f4df9d572363e587d5ac0cd2b4c942d3 Mon Sep 17 00:00:00 2001
+From 242d767f2e8bd9830df8a4debdfd509ceb83176b Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Mon, 27 Jul 2026 21:34:28 +0900
-Subject: [PATCH] 6.12.74-cambyses-v0.6.0
+Date: Tue, 10 Nov 2026 09:26:01 +0900
+Subject: [PATCH] 6.18.22-cambyses-v0.7.0
 
 ---
- kernel/sched/fair.c     | 156 ++++++++++++++++++++++++++++++++++++----
- kernel/sched/features.h |  39 ++++++++++
- 2 files changed, 181 insertions(+), 14 deletions(-)
+ kernel/sched/fair.c     | 175 ++++++++++++++++++++++++++++++++++++----
+ kernel/sched/features.h |  44 ++++++++++
+ 2 files changed, 205 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6efb1dfcd9..ed6f39f191 100644
+index d9777c81db..c42ada5ef0 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -9311,6 +9311,9 @@ enum migration_type {
+@@ -9279,6 +9279,9 @@ enum migration_type {
  #define LBF_DST_PINNED  0x04
  #define LBF_SOME_PINNED	0x08
  #define LBF_ACTIVE_LB	0x10
@@ -22,14 +22,14 @@ index 6efb1dfcd9..ed6f39f191 100644
  
  struct lb_env {
  	struct sched_domain	*sd;
-@@ -9583,6 +9586,62 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+@@ -9597,6 +9600,81 @@ static struct task_struct *detach_one_task(struct lb_env *env)
  	return NULL;
  }
  
 +#define SCHED_CAMBYSES_AUTHOR	"Masahito Suzuki"
 +#define SCHED_CAMBYSES_PROGNAME	"Cambyses CFS Load Balancer modification"
 +
-+#define SCHED_CAMBYSES_VERSION	"0.6.0"
++#define SCHED_CAMBYSES_VERSION	"0.7.0"
 +
 +static int __init sched_cambyses_init(void)
 +{
@@ -58,17 +58,36 @@ index 6efb1dfcd9..ed6f39f191 100644
 +};
 +
 +/*
++ * Whether this balance operation concedes to the cheapest candidate.
++ *
++ * Only a balance pulling into an idle CPU does: handing it work is a win even
++ * when the task overshoots, so conceding on the first scan that admits nothing
++ * is worth it.  A busy destination gains nothing from an overshoot but can
++ * flip the imbalance and bounce the task back, so it keeps the upstream
++ * relaxation, which concedes only after failures have been recorded.
++ *
++ * Decided from env->idle, which is fixed for the whole operation, rather than
++ * idle_cpu(env->dst_cpu), which a wakeup can change between candidates and so
++ * split one scan across both rules.  detach_tasks() needs no matching test:
++ * the concession is only ever recorded when this returns true.
++ */
++static inline bool lb_concede_cheapest(struct lb_env *env)
++{
++	return sched_feat(LB_CONCEDE_CHEAPEST) && env->idle != __CPU_NOT_IDLE;
++}
++
++/*
 + * Does moving @p, costing @cost, fit the remaining imbalance budget?
 + *
-+ * LB_STRICT_BUDGET compares directly and notes the smallest overshoot seen so
-+ * far.  Upstream instead relaxes the comparison by sd->nr_balance_failed; see
-+ * features.h for why that relaxation is unreachable while cheaper candidates
-+ * keep succeeding.
++ * With LB_CONCEDE_CHEAPEST the comparison is direct and the smallest overshoot
++ * seen so far is noted.  Upstream instead relaxes the comparison by
++ * sd->nr_balance_failed; see features.h for why that relaxation is unreachable
++ * while cheaper candidates keep succeeding.
 + */
 +static bool lb_cost_fits(struct lb_env *env, struct lb_concession *concession,
 +			 struct task_struct *p, unsigned long cost)
 +{
-+	if (!sched_feat(LB_STRICT_BUDGET))
++	if (!lb_concede_cheapest(env))
 +		return shr_bound(cost, env->sd->nr_balance_failed) <= env->imbalance;
 +
 +	if (cost <= env->imbalance)
@@ -85,7 +104,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  /*
   * detach_tasks() -- tries to detach up to imbalance load/util/tasks from
   * busiest_rq, as part of a balancing operation within domain "sd".
-@@ -9592,8 +9651,10 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+@@ -9606,8 +9684,10 @@ static struct task_struct *detach_one_task(struct lb_env *env)
  static int detach_tasks(struct lb_env *env)
  {
  	struct list_head *tasks = &env->src_rq->cfs_tasks;
@@ -97,7 +116,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  	int detached = 0;
  
  	lockdep_assert_rq_held(env->src_rq);
-@@ -9610,27 +9671,49 @@ static int detach_tasks(struct lb_env *env)
+@@ -9624,27 +9704,49 @@ static int detach_tasks(struct lb_env *env)
  	if (env->imbalance <= 0)
  		return 0;
  
@@ -151,7 +170,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  
  		if (!can_migrate_task(p, env))
  			goto next;
-@@ -9650,13 +9733,8 @@ static int detach_tasks(struct lb_env *env)
+@@ -9664,13 +9766,8 @@ static int detach_tasks(struct lb_env *env)
  			    load < 16 && !env->sd->nr_balance_failed)
  				goto next;
  
@@ -167,7 +186,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  				goto next;
  
  			env->imbalance -= load;
-@@ -9665,7 +9743,7 @@ static int detach_tasks(struct lb_env *env)
+@@ -9679,7 +9776,7 @@ static int detach_tasks(struct lb_env *env)
  		case migrate_util:
  			util = task_util_est(p);
  
@@ -176,7 +195,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  				goto next;
  
  			env->imbalance -= util;
-@@ -9687,6 +9765,7 @@ static int detach_tasks(struct lb_env *env)
+@@ -9701,6 +9798,7 @@ static int detach_tasks(struct lb_env *env)
  		detach_task(p, env);
  		list_add(&p->se.group_node, &env->tasks);
  
@@ -184,7 +203,7 @@ index 6efb1dfcd9..ed6f39f191 100644
  		detached++;
  
  #ifdef CONFIG_PREEMPTION
-@@ -9711,9 +9790,58 @@ static int detach_tasks(struct lb_env *env)
+@@ -9725,9 +9823,58 @@ static int detach_tasks(struct lb_env *env)
  		if (p->sched_task_hot)
  			schedstat_inc(p->stats.nr_failed_migrations_hot);
  
@@ -200,7 +219,7 @@ index 6efb1dfcd9..ed6f39f191 100644
 +	 * imbalanced_active_balance() escalates for migrate_task only, so a
 +	 * task larger than the imbalance would otherwise never move.
 +	 *
-+	 * This is the whole reason LB_STRICT_BUDGET can drop the upstream
++	 * This is the whole reason LB_CONCEDE_CHEAPEST can drop the upstream
 +	 * relaxation.  Both exist to guarantee progress; this one asks the
 +	 * candidates present rather than a domain counter that other tasks'
 +	 * successes keep resetting, and it acts on the first scan that admits
@@ -245,10 +264,10 @@ index 6efb1dfcd9..ed6f39f191 100644
  	 * Right now, this is one of only two places we collect this stat
  	 * so we can safely collect detach_one_task() stats here rather
 diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index da8ec0c23f..82c197e3e7 100644
+index 136a6584be..e0e2afa2a7 100644
 --- a/kernel/sched/features.h
 +++ b/kernel/sched/features.h
-@@ -112,6 +112,45 @@ SCHED_FEAT(RT_RUNTIME_SHARE, false)
+@@ -111,6 +111,50 @@ SCHED_FEAT(RT_RUNTIME_SHARE, false)
  SCHED_FEAT(LB_MIN, false)
  SCHED_FEAT(ATTACH_AGE_LOAD, true)
  
@@ -287,9 +306,14 @@ index da8ec0c23f..82c197e3e7 100644
 + * first scan that admits nothing rather than once enough failures have been
 + * recorded.
 + *
-+ * Turn off to get the upstream shr_bound() relaxation.
++ * Applies only when the balance pulls into an idle CPU (env->idle !=
++ * __CPU_NOT_IDLE).  Handing an idle CPU work is worth an overshoot; for a busy
++ * destination an overshoot can flip the imbalance and bounce the task back,
++ * so it keeps the upstream relaxation.
++ *
++ * Turn off to get the upstream shr_bound() relaxation everywhere.
 + */
-+SCHED_FEAT(LB_STRICT_BUDGET, true)
++SCHED_FEAT(LB_CONCEDE_CHEAPEST, true)
 +
  SCHED_FEAT(WA_IDLE, true)
  SCHED_FEAT(WA_WEIGHT, true)

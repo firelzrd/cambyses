@@ -40,7 +40,7 @@ in the list, so this is a cost reduction rather than an ordering fix.
 **Real hardware: no measurable effect either way, no regression.** Expected for
 a cost reduction of this size.
 
-## 2. `LB_STRICT_BUDGET` — size candidates against the budget, not a failure count
+## 2. `LB_CONCEDE_CHEAPEST` — size candidates against the budget, not a failure count
 
 A migration candidate whose cost exceeds the remaining imbalance is rejected.
 Upstream relaxes that comparison by `sd->nr_balance_failed`, halving the
@@ -66,7 +66,18 @@ Progress is then guaranteed by the candidates actually present rather than by a
 counter other tasks keep clearing, and it acts on the first scan that admits
 nothing instead of once enough failures have been recorded.
 
-### Evidence
+**Idle destinations only (0.7.0).** Handing an idle CPU work is worth an
+overshoot, so the concession applies when the balance pulls into an idle CPU
+(`env->idle != __CPU_NOT_IDLE`, newidle and periodic idle). A busy destination
+gains nothing from an overshoot and can flip the imbalance and bounce the task
+back, so it keeps the upstream `nr_balance_failed` relaxation. The test uses
+`env->idle`, which is fixed for the whole balance, not `idle_cpu(dst)`, which a
+wakeup can change between candidates.
+
+The feature was called `LB_STRICT_BUDGET` up to 0.6.0. "Strict" was a misnomer:
+the change is eager (it concedes at once), not strict.
+
+### Evidence (measured with 0.6.0)
 
 Mixed saturated workload (24–64 CPU hogs oversubscribing 16 CPUs, light
 `schbench` probe measuring latency), same boot, `sched_feat` toggling only,
@@ -89,16 +100,26 @@ designed.
 The effect is regime-specific: absent in homogeneous workloads, absent when the
 probe does no work, present when the probe does real work under saturation.
 
+These runs were made before the idle-only rule, when the concession applied to
+every destination. Re-checked for 0.7.0 on Ryzen AI MAX+ 395 (32 threads, 2 L3,
+Linux 6.18.62, 48 hogs + `schbench` probe, 10 order-rotated rounds): the probe
+gain is unchanged by the idle-only rule (probe p99 and RPS the same as with the
+concession everywhere), and the concessions made for busy destinations (about
+900 per run) drop to zero. Migration counts and throughput of burst and
+`stress-ng` matrix workloads are unchanged — the avoidable migrations there are
+a few per second.
+
 ---
 
 ## Usage
 
-Apply `patches/6.12/0001-6.12.74-cambyses-v0.6.0.patch` to a 6.12.74 tree.
-Both features default on:
+Apply the patch for your kernel from `patches/` to a clean tree:
+`0001-6.12.74-cambyses-v0.7.0.patch`, `0001-6.18.22-cambyses-v0.7.0.patch` or
+`0001-7.3.0-rc5-cambyses-v0.7.0.patch`. Both features default on:
 
 ```sh
-echo NO_LB_ROTATE_BLOCK  > /sys/kernel/debug/sched/features
-echo NO_LB_STRICT_BUDGET > /sys/kernel/debug/sched/features
+echo NO_LB_ROTATE_BLOCK     > /sys/kernel/debug/sched/features
+echo NO_LB_CONCEDE_CHEAPEST > /sys/kernel/debug/sched/features
 ```
 
 Requires `CONFIG_SCHED_DEBUG=y` and `CONFIG_JUMP_LABEL=y` for the runtime
@@ -114,11 +135,18 @@ has the full measurement record.
 ## Scope
 
 Measured on one machine: Ryzen 7 7840HS, 8C/16T, single CCD, 16 MB shared L3,
-one NUMA node, `governor=performance`, synthetic workloads. Cross-CCD and NUMA
+one NUMA node, `governor=performance`, synthetic workloads. 0.7.0 was also
+checked on a Ryzen AI MAX+ 395 (two L3 domains, `governor=powersave`). NUMA
 topologies — where migration is far more expensive — are untested, as are real
 workloads such as a kernel build.
 
 Neither patch references BORE or POC Selector; both operate on stock CFS.
+
+On Linux 7.3 the balancer also has cache-aware scheduling (`LBF_LLC_PINNED`),
+which does not count an LLC-locality refusal in `nr_balance_failed`. For a busy
+destination, where this patch keeps the upstream relaxation, that relaxation
+therefore advances more slowly there than on 6.12. The LLC check runs before
+the budget test, so a task it refuses is never a concession candidate.
 
 ## License
 
