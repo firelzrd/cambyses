@@ -1,4 +1,4 @@
-benchmark/mixbench
+benchmark/fill
 __pycache__/
 *.pyc
 *.log

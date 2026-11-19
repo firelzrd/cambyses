@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="370" viewBox="0 0 760 370" role="img" aria-labelledby="t d">
+<title id="t">Mean wait of each independent run — lower is better</title>
+<desc id="d">Time until an idle CPU in another LLC gets work, and the hog work done during the free phase, upstream vs Cambyses, with and without a ticker on the idle CPU.</desc>
+<style>
+.title{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;fill:#0b0b0b}
+.head{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;fill:#0b0b0b}
+.sub{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.leg{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.lab{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;fill:#0b0b0b}
+.val{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11.5px;fill:#0b0b0b}
+.ax{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11px;fill:#8a8985}
+.bg{fill:#fcfcfb}
+.grid{stroke:#e6e5e0}
+.f1{fill:#2a78d6}
+.f2{fill:#eb6834}
+.l1{stroke:#2a78d6}
+.l2{stroke:#eb6834}
+.d1{fill:#2a78d6;stroke:#fcfcfb}
+.d2{fill:#eb6834;stroke:#fcfcfb}
+.k{fill:#52514e}
+.kd{fill:#52514e;stroke:#fcfcfb}
+.kl{stroke:#52514e}
+@media (prefers-color-scheme:dark){
+.title{fill:#f0efec}
+.head{fill:#f0efec}
+.sub{fill:#c3c2b7}
+.leg{fill:#c3c2b7}
+.lab{fill:#f0efec}
+.val{fill:#f0efec}
+.ax{fill:#8f8e88}
+.bg{fill:#1a1a19}
+.grid{stroke:#33332f}
+.f1{fill:#3987e5}
+.f2{fill:#d95926}
+.l1{stroke:#3987e5}
+.l2{stroke:#d95926}
+.d1{fill:#3987e5;stroke:#1a1a19}
+.d2{fill:#d95926;stroke:#1a1a19}
+.k{fill:#c3c2b7}
+.kd{fill:#c3c2b7;stroke:#1a1a19}
+.kl{stroke:#c3c2b7}
+}
+</style>
+<rect width="760" height="370" rx="8" class="bg"/>
+<text x="20" y="32" class="title">Mean wait of each independent run — lower is better</text>
+<text x="20" y="52" class="sub">Ryzen AI MAX+ 395, Linux 6.18.62, release rules · 20 independent runs of 20 trials per setting</text>
+<rect x="20" y="74" width="22" height="8" rx="4" class="f1"/>
+<text x="50" y="82" class="lab">Upstream</text>
+<rect x="136.8" y="74" width="22" height="8" rx="4" class="f2"/>
+<text x="166.8" y="82" class="lab">Cambyses</text>
+<circle cx="259.6" cy="78" r="4.5" stroke-width="2" class="kd"/><text x="269.6" y="82" class="leg">one run</text>
+<line x1="339.6" y1="71" x2="339.6" y2="85" stroke-width="3" class="kl"/><text x="349.6" y="82" class="leg">mean of the runs</text>
+<text x="660" y="106" class="ax">mean</text>
+<line x1="170.0" y1="118" x2="170.0" y2="316" stroke-width="1" class="grid"/>
+<text x="170.0" y="332" text-anchor="middle" class="ax">2</text>
+<line x1="263.5" y1="118" x2="263.5" y2="316" stroke-width="1" class="grid"/>
+<text x="263.5" y="332" text-anchor="middle" class="ax">5</text>
+<line x1="334.3" y1="118" x2="334.3" y2="316" stroke-width="1" class="grid"/>
+<text x="334.3" y="332" text-anchor="middle" class="ax">10</text>
+<line x1="405.0" y1="118" x2="405.0" y2="316" stroke-width="1" class="grid"/>
+<text x="405.0" y="332" text-anchor="middle" class="ax">20</text>
+<line x1="498.5" y1="118" x2="498.5" y2="316" stroke-width="1" class="grid"/>
+<text x="498.5" y="332" text-anchor="middle" class="ax">50</text>
+<line x1="569.3" y1="118" x2="569.3" y2="316" stroke-width="1" class="grid"/>
+<text x="569.3" y="332" text-anchor="middle" class="ax">100</text>
+<line x1="640.0" y1="118" x2="640.0" y2="316" stroke-width="1" class="grid"/>
+<text x="640.0" y="332" text-anchor="middle" class="ax">200</text>
+<text x="405" y="350" text-anchor="middle" class="ax">ms, log scale</text>
+<text x="20" y="149.0" class="lab">duty 6 / 4 ms</text>
+<text x="20" y="165.0" class="ax">ticker 100 µs</text>
+<g><title>Upstream, duty 6/4, ticker 100 µs: 20 runs, mean of run means 55.1 ms, range 5.3-126.2</title>
+<circle cx="484.9" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="528.4" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="440.7" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="550.2" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="589.1" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="553.6" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="433.7" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="593.0" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="463.8" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="269.8" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="453.8" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="494.8" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="564.8" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="496.2" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="471.7" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="465.5" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="359.6" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="472.2" cy="137" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="559.8" cy="131" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="465.2" cy="134" r="3.5" stroke-width="1" class="d1"/>
+<line x1="508.4" y1="125" x2="508.4" y2="143" stroke-width="3" class="kl"/>
+<text x="660" y="138" class="val">55.1</text></g>
+<g><title>Cambyses, duty 6/4, ticker 100 µs: 20 runs, mean of run means 8.6 ms, range 3.5-14.6</title>
+<circle cx="280.2" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="362.1" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="329.8" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="248.1" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="339.4" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="226.2" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="319.3" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="330.6" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="361.1" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="315.5" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="330.7" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="325.2" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="237.4" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="286.0" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="373.0" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="310.7" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="328.8" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="321.0" cy="159" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="282.5" cy="153" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="324.7" cy="156" r="3.5" stroke-width="1" class="d2"/>
+<line x1="318.5" y1="147" x2="318.5" y2="165" stroke-width="3" class="kl"/>
+<text x="660" y="160" class="val">8.6</text></g>
+<text x="20" y="215.0" class="lab">duty 6 / 4 ms</text>
+<text x="20" y="231.0" class="ax">no ticker</text>
+<g><title>Upstream, duty 6/4, no ticker: 20 runs, mean of run means 61.8 ms, range 22.0-87.1</title>
+<circle cx="414.6" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="509.0" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="530.5" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="531.8" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="480.8" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="552.5" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="519.3" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="489.8" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="547.3" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="511.5" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="515.7" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="541.1" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="501.3" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="503.3" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="486.6" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="555.2" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="554.6" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="550.9" cy="203" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="499.7" cy="197" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="514.8" cy="200" r="3.5" stroke-width="1" class="d1"/>
+<line x1="520.2" y1="191" x2="520.2" y2="209" stroke-width="3" class="kl"/>
+<text x="660" y="204" class="val">61.8</text></g>
+<g><title>Cambyses, duty 6/4, no ticker: 20 runs, mean of run means 50.5 ms, range 15.7-82.1</title>
+<circle cx="380.1" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="426.0" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="517.5" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="546.5" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="455.7" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="534.1" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="546.5" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="510.6" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="522.7" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="549.2" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="457.7" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="509.0" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="462.6" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="447.0" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="508.3" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="531.2" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="426.6" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="510.2" cy="225" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="485.3" cy="219" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="479.9" cy="222" r="3.5" stroke-width="1" class="d2"/>
+<line x1="499.6" y1="213" x2="499.6" y2="231" stroke-width="3" class="kl"/>
+<text x="660" y="226" class="val">50.5</text></g>
+<text x="20" y="281.0" class="lab">duty 4 / 6 ms</text>
+<text x="20" y="297.0" class="ax">no ticker</text>
+<g><title>Upstream, duty 4/6, no ticker: 20 runs, mean of run means 44.9 ms, range 9.3-75.4</title>
+<circle cx="326.9" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="444.7" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="534.1" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="468.8" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="540.5" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="521.3" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="467.7" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="497.6" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="508.1" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="479.6" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="510.0" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="481.9" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="480.6" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="466.5" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="518.3" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="495.7" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="410.9" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="481.4" cy="269" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="492.5" cy="263" r="3.5" stroke-width="1" class="d1"/>
+<circle cx="458.5" cy="266" r="3.5" stroke-width="1" class="d1"/>
+<line x1="487.6" y1="257" x2="487.6" y2="275" stroke-width="3" class="kl"/>
+<text x="660" y="270" class="val">44.9</text></g>
+<g><title>Cambyses, duty 4/6, no ticker: 20 runs, mean of run means 40.8 ms, range 11.4-64.1</title>
+<circle cx="347.4" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="462.0" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="490.7" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="463.4" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="464.2" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="490.3" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="444.8" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="490.3" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="523.9" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="491.2" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="493.4" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="462.2" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="481.5" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="501.6" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="498.9" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="459.8" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="455.6" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="480.8" cy="291" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="509.9" cy="285" r="3.5" stroke-width="1" class="d2"/>
+<circle cx="439.2" cy="288" r="3.5" stroke-width="1" class="d2"/>
+<line x1="477.7" y1="279" x2="477.7" y2="297" stroke-width="3" class="kl"/>
+<text x="660" y="292" class="val">40.8</text></g>
+</svg>

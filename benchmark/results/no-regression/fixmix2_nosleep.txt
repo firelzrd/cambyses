@@ -1,0 +1,26 @@
+###### MIXAB-START gov=powersave cfgs=[base budget] N=12 heavy=24 light=24 hkb=512 secs=10 ######
+R0 base MIXBENCH heavy_thr=12170119.0 light_thr=16560757.1 heavy_mig=12 light_mig=126 heavy_mig_share=0.087 elapsed=10.06
+R0 budget MIXBENCH heavy_thr=11835283.9 light_thr=18140448.1 heavy_mig=4 light_mig=144 heavy_mig_share=0.027 elapsed=10.00
+R1 budget MIXBENCH heavy_thr=11973674.7 light_thr=15841485.6 heavy_mig=9 light_mig=71 heavy_mig_share=0.113 elapsed=10.01
+R1 base MIXBENCH heavy_thr=12325623.7 light_thr=16095513.1 heavy_mig=6 light_mig=91 heavy_mig_share=0.062 elapsed=10.00
+R2 base MIXBENCH heavy_thr=11931354.8 light_thr=16352337.7 heavy_mig=2 light_mig=49 heavy_mig_share=0.039 elapsed=10.00
+R2 budget MIXBENCH heavy_thr=11781418.7 light_thr=16516137.9 heavy_mig=12 light_mig=68 heavy_mig_share=0.150 elapsed=10.02
+R3 budget MIXBENCH heavy_thr=11275567.9 light_thr=18172151.2 heavy_mig=6 light_mig=91 heavy_mig_share=0.062 elapsed=10.00
+R3 base MIXBENCH heavy_thr=11688499.8 light_thr=16380648.8 heavy_mig=4 light_mig=53 heavy_mig_share=0.070 elapsed=10.00
+R4 base MIXBENCH heavy_thr=11139842.1 light_thr=17651475.0 heavy_mig=2 light_mig=129 heavy_mig_share=0.015 elapsed=10.00
+R4 budget MIXBENCH heavy_thr=12053111.4 light_thr=16360924.2 heavy_mig=1 light_mig=46 heavy_mig_share=0.021 elapsed=10.00
+R5 budget MIXBENCH heavy_thr=11900508.1 light_thr=16326111.4 heavy_mig=10 light_mig=167 heavy_mig_share=0.056 elapsed=10.00
+R5 base MIXBENCH heavy_thr=11422605.3 light_thr=13910104.8 heavy_mig=11 light_mig=94 heavy_mig_share=0.105 elapsed=10.09
+R6 base MIXBENCH heavy_thr=12084021.0 light_thr=16648430.1 heavy_mig=2 light_mig=64 heavy_mig_share=0.030 elapsed=10.02
+R6 budget MIXBENCH heavy_thr=11654216.7 light_thr=16308063.1 heavy_mig=0 light_mig=49 heavy_mig_share=0.000 elapsed=10.15
+R7 budget MIXBENCH heavy_thr=11660638.1 light_thr=18145960.2 heavy_mig=6 light_mig=69 heavy_mig_share=0.080 elapsed=10.00
+R7 base MIXBENCH heavy_thr=11819627.5 light_thr=16111749.4 heavy_mig=6 light_mig=51 heavy_mig_share=0.105 elapsed=10.00
+R8 base MIXBENCH heavy_thr=11967787.6 light_thr=16301977.9 heavy_mig=6 light_mig=48 heavy_mig_share=0.111 elapsed=10.04
+R8 budget MIXBENCH heavy_thr=11760105.9 light_thr=16187373.1 heavy_mig=7 light_mig=85 heavy_mig_share=0.076 elapsed=10.00
+R9 budget MIXBENCH heavy_thr=11902881.3 light_thr=16222925.1 heavy_mig=10 light_mig=68 heavy_mig_share=0.128 elapsed=10.00
+R9 base MIXBENCH heavy_thr=12152861.8 light_thr=16417840.6 heavy_mig=1 light_mig=139 heavy_mig_share=0.007 elapsed=10.00
+R10 base MIXBENCH heavy_thr=11606454.0 light_thr=16793978.1 heavy_mig=13 light_mig=153 heavy_mig_share=0.078 elapsed=10.05
+R10 budget MIXBENCH heavy_thr=11413092.4 light_thr=17623680.9 heavy_mig=3 light_mig=69 heavy_mig_share=0.042 elapsed=10.03
+R11 budget MIXBENCH heavy_thr=12002477.7 light_thr=16300247.5 heavy_mig=8 light_mig=48 heavy_mig_share=0.143 elapsed=10.00
+R11 base MIXBENCH heavy_thr=12087630.3 light_thr=16360627.3 heavy_mig=2 light_mig=59 heavy_mig_share=0.033 elapsed=10.00
+###### MIXAB-DONE ######

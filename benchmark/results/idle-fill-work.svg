@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="412" viewBox="0 0 760 412" role="img" aria-labelledby="t d">
+<title id="t">Hog work in the window after each release — higher is better</title>
+<desc id="d">Time until an idle CPU in another LLC gets work, and the hog work done during the free phase, upstream vs Cambyses, with and without a ticker on the idle CPU.</desc>
+<style>
+.title{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;fill:#0b0b0b}
+.head{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;fill:#0b0b0b}
+.sub{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.leg{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.lab{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;fill:#0b0b0b}
+.val{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11.5px;fill:#0b0b0b}
+.ax{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11px;fill:#8a8985}
+.bg{fill:#fcfcfb}
+.grid{stroke:#e6e5e0}
+.f1{fill:#2a78d6}
+.f2{fill:#eb6834}
+.l1{stroke:#2a78d6}
+.l2{stroke:#eb6834}
+.d1{fill:#2a78d6;stroke:#fcfcfb}
+.d2{fill:#eb6834;stroke:#fcfcfb}
+.k{fill:#52514e}
+.kd{fill:#52514e;stroke:#fcfcfb}
+.kl{stroke:#52514e}
+@media (prefers-color-scheme:dark){
+.title{fill:#f0efec}
+.head{fill:#f0efec}
+.sub{fill:#c3c2b7}
+.leg{fill:#c3c2b7}
+.lab{fill:#f0efec}
+.val{fill:#f0efec}
+.ax{fill:#8f8e88}
+.bg{fill:#1a1a19}
+.grid{stroke:#33332f}
+.f1{fill:#3987e5}
+.f2{fill:#d95926}
+.l1{stroke:#3987e5}
+.l2{stroke:#d95926}
+.d1{fill:#3987e5;stroke:#1a1a19}
+.d2{fill:#d95926;stroke:#1a1a19}
+.k{fill:#c3c2b7}
+.kd{fill:#c3c2b7;stroke:#1a1a19}
+.kl{stroke:#c3c2b7}
+}
+</style>
+<rect width="760" height="412" rx="8" class="bg"/>
+<text x="20" y="32" class="title">Hog work in the window after each release — higher is better</text>
+<text x="20" y="52" class="sub">Ryzen AI MAX+ 395, Linux 6.18.62 + Cambyses 0.7.2, 4-CPU partition across two L3s · 6 ABBA blocks</text>
+<rect x="20" y="74" width="22" height="8" rx="4" class="f1"/>
+<text x="50" y="82" class="lab">Upstream</text>
+<rect x="136.8" y="74" width="22" height="8" rx="4" class="f2"/>
+<text x="166.8" y="82" class="lab">Cambyses</text>
+<circle cx="259.6" cy="78" r="4.5" stroke-width="2" class="kd"/><text x="269.6" y="82" class="leg">mean</text>
+<text x="660" y="106" class="ax">gain</text>
+<line x1="170.0" y1="118" x2="170.0" y2="358" stroke-width="1" class="grid"/>
+<text x="170.0" y="374" text-anchor="middle" class="ax">2.1</text>
+<line x1="228.8" y1="118" x2="228.8" y2="358" stroke-width="1" class="grid"/>
+<text x="228.8" y="374" text-anchor="middle" class="ax">2.2</text>
+<line x1="287.5" y1="118" x2="287.5" y2="358" stroke-width="1" class="grid"/>
+<text x="287.5" y="374" text-anchor="middle" class="ax">2.3</text>
+<line x1="346.3" y1="118" x2="346.3" y2="358" stroke-width="1" class="grid"/>
+<text x="346.3" y="374" text-anchor="middle" class="ax">2.4</text>
+<line x1="405.0" y1="118" x2="405.0" y2="358" stroke-width="1" class="grid"/>
+<text x="405.0" y="374" text-anchor="middle" class="ax">2.5</text>
+<line x1="463.8" y1="118" x2="463.8" y2="358" stroke-width="1" class="grid"/>
+<text x="463.8" y="374" text-anchor="middle" class="ax">2.6</text>
+<line x1="522.5" y1="118" x2="522.5" y2="358" stroke-width="1" class="grid"/>
+<text x="522.5" y="374" text-anchor="middle" class="ax">2.7</text>
+<line x1="581.3" y1="118" x2="581.3" y2="358" stroke-width="1" class="grid"/>
+<text x="581.3" y="374" text-anchor="middle" class="ax">2.8</text>
+<line x1="640.0" y1="118" x2="640.0" y2="358" stroke-width="1" class="grid"/>
+<text x="640.0" y="374" text-anchor="middle" class="ax">2.9</text>
+<text x="405" y="392" text-anchor="middle" class="ax">CPUs of hog work</text>
+<text x="20" y="136.0" class="lab">window 50 ms</text>
+<text x="20" y="152.0" class="ax">ticker 100 µs</text>
+<line x1="266.0" y1="138.0" x2="478.9" y2="138.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 50 ms, ticker 100 µs: 2.263 CPUs of hog work</title><circle cx="266.0" cy="138.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 50 ms, ticker 100 µs: 2.626 CPUs of hog work</title><circle cx="478.9" cy="138.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="142.0" class="val">+16.0%</text>
+<text x="20" y="176.0" class="lab">window 100 ms</text>
+<text x="20" y="192.0" class="ax">ticker 100 µs</text>
+<line x1="338.4" y1="178.0" x2="497.7" y2="178.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 100 ms, ticker 100 µs: 2.387 CPUs of hog work</title><circle cx="338.4" cy="178.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 100 ms, ticker 100 µs: 2.658 CPUs of hog work</title><circle cx="497.7" cy="178.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="182.0" class="val">+11.4%</text>
+<text x="20" y="216.0" class="lab">window 200 ms</text>
+<text x="20" y="232.0" class="ax">ticker 100 µs</text>
+<line x1="440.0" y1="218.0" x2="528.3" y2="218.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 200 ms, ticker 100 µs: 2.560 CPUs of hog work</title><circle cx="440.0" cy="218.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 200 ms, ticker 100 µs: 2.710 CPUs of hog work</title><circle cx="528.3" cy="218.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="222.0" class="val">+5.9%</text>
+<text x="20" y="256.0" class="lab">window 50 ms</text>
+<text x="20" y="272.0" class="ax">no ticker</text>
+<line x1="252.2" y1="258.0" x2="294.2" y2="258.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 50 ms, no ticker: 2.240 CPUs of hog work</title><circle cx="252.2" cy="258.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 50 ms, no ticker: 2.311 CPUs of hog work</title><circle cx="294.2" cy="258.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="262.0" class="val">+3.2%</text>
+<text x="20" y="296.0" class="lab">window 100 ms</text>
+<text x="20" y="312.0" class="ax">no ticker</text>
+<line x1="294.2" y1="298.0" x2="299.6" y2="298.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 100 ms, no ticker: 2.311 CPUs of hog work</title><circle cx="294.2" cy="298.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 100 ms, no ticker: 2.321 CPUs of hog work</title><circle cx="299.6" cy="298.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="302.0" class="val">+0.4%</text>
+<text x="20" y="336.0" class="lab">window 200 ms</text>
+<text x="20" y="352.0" class="ax">no ticker</text>
+<line x1="402.0" y1="338.0" x2="404.4" y2="338.0" stroke-width="2" class="kl"/>
+<g><title>Upstream, window 200 ms, no ticker: 2.495 CPUs of hog work</title><circle cx="402.0" cy="338.0" r="6" stroke-width="2" class="d1"/></g>
+<g><title>Cambyses, window 200 ms, no ticker: 2.499 CPUs of hog work</title><circle cx="404.4" cy="338.0" r="6" stroke-width="2" class="d2"/></g>
+<text x="660" y="342.0" class="val">+0.2%</text>
+</svg>

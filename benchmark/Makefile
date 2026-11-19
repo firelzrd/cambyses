@@ -1,10 +1,9 @@
-# mixbench: multi-class discriminating workload for the load-balance A/B.
 CFLAGS ?= -O2 -Wall
-LDLIBS = -lpthread
 
-mixbench: mixbench.c
+fill: fill.c
+	$(CC) $(CFLAGS) -pthread -o $@ $<
 
 clean:
-	rm -f mixbench
+	rm -f fill
 
 .PHONY: clean

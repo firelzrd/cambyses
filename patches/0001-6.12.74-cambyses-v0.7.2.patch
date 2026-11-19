@@ -1,35 +1,38 @@
-From 26d1be0a34d6a6375ce9d2ea11719f643ed2f35b Mon Sep 17 00:00:00 2001
+From 4ea7de9bcc7898bc0039d88386e6e25585a3f460 Mon Sep 17 00:00:00 2001
 From: Masahito S <firelzrd@gmail.com>
-Date: Mon, 16 Nov 2026 14:02:16 +0900
-Subject: [PATCH] 6.12.74-cambyses-v0.7.1
+Date: Thu, 19 Nov 2026 16:20:16 +0900
+Subject: [PATCH] 6.12.74-cambyses-v0.7.2
 
 ---
- kernel/sched/fair.c     | 196 +++++++++++++++++++++++++++++++++++++---
+ kernel/sched/fair.c     | 207 +++++++++++++++++++++++++++++++++++++---
  kernel/sched/features.h |  50 ++++++++++
- 2 files changed, 232 insertions(+), 14 deletions(-)
+ 2 files changed, 243 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6efb1dfcd9..170b40d0ff 100644
+index 6efb1dfcd9..2b2641f612 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -9311,6 +9311,9 @@ enum migration_type {
+@@ -9311,6 +9311,12 @@ enum migration_type {
  #define LBF_DST_PINNED  0x04
  #define LBF_SOME_PINNED	0x08
  #define LBF_ACTIVE_LB	0x10
 +/* This balance operation has detached at least one task. Sticky across the
 + * more_balance retries, so it reflects the whole operation, not one scan. */
 +#define LBF_MOVED	0x20
++/* sched_balance_rq() redirected this operation from a CPU the tasks could not
++ * run on to another CPU of the same group (LBF_DST_PINNED -> new_dst_cpu). */
++#define LBF_DST_REDIRECTED	0x40
  
  struct lb_env {
  	struct sched_domain	*sd;
-@@ -9583,6 +9586,96 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+@@ -9583,6 +9589,103 @@ static struct task_struct *detach_one_task(struct lb_env *env)
  	return NULL;
  }
  
 +#define SCHED_CAMBYSES_AUTHOR	"Masahito Suzuki"
 +#define SCHED_CAMBYSES_PROGNAME	"Cambyses CFS Load Balancer modification"
 +
-+#define SCHED_CAMBYSES_VERSION	"0.7.1"
++#define SCHED_CAMBYSES_VERSION	"0.7.2"
 +
 +static int __init sched_cambyses_init(void)
 +{
@@ -71,10 +74,17 @@ index 6efb1dfcd9..170b40d0ff 100644
 + * idle_cpu(env->dst_cpu), which a wakeup can change between candidates and so
 + * split one scan across both rules.  detach_tasks() needs no matching test:
 + * the concession is only ever recorded when this returns true.
++ *
++ * Not after a redirect.  When the tasks cannot run on the idle CPU that asked
++ * for them, sched_balance_rq() retries towards another CPU of its group, but
++ * env->idle still describes the CPU that asked.  The new destination is
++ * normally busy, so an overshoot there is exactly what the idle-only rule
++ * exists to prevent.
 + */
 +static inline bool lb_concede_cheapest(struct lb_env *env)
 +{
-+	return sched_feat(LB_CONCEDE_CHEAPEST) && env->idle != __CPU_NOT_IDLE;
++	return sched_feat(LB_CONCEDE_CHEAPEST) && env->idle != __CPU_NOT_IDLE &&
++	       !(env->flags & LBF_DST_REDIRECTED);
 +}
 +
 +/*
@@ -119,7 +129,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  /*
   * detach_tasks() -- tries to detach up to imbalance load/util/tasks from
   * busiest_rq, as part of a balancing operation within domain "sd".
-@@ -9592,8 +9685,10 @@ static struct task_struct *detach_one_task(struct lb_env *env)
+@@ -9592,8 +9695,10 @@ static struct task_struct *detach_one_task(struct lb_env *env)
  static int detach_tasks(struct lb_env *env)
  {
  	struct list_head *tasks = &env->src_rq->cfs_tasks;
@@ -131,7 +141,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  	int detached = 0;
  
  	lockdep_assert_rq_held(env->src_rq);
-@@ -9610,27 +9705,49 @@ static int detach_tasks(struct lb_env *env)
+@@ -9610,27 +9715,49 @@ static int detach_tasks(struct lb_env *env)
  	if (env->imbalance <= 0)
  		return 0;
  
@@ -185,7 +195,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  
  		if (!can_migrate_task(p, env))
  			goto next;
-@@ -9650,13 +9767,8 @@ static int detach_tasks(struct lb_env *env)
+@@ -9650,13 +9777,8 @@ static int detach_tasks(struct lb_env *env)
  			    load < 16 && !env->sd->nr_balance_failed)
  				goto next;
  
@@ -201,7 +211,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  				goto next;
  
  			env->imbalance -= load;
-@@ -9665,7 +9777,7 @@ static int detach_tasks(struct lb_env *env)
+@@ -9665,7 +9787,7 @@ static int detach_tasks(struct lb_env *env)
  		case migrate_util:
  			util = task_util_est(p);
  
@@ -210,7 +220,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  				goto next;
  
  			env->imbalance -= util;
-@@ -9687,6 +9799,7 @@ static int detach_tasks(struct lb_env *env)
+@@ -9687,6 +9809,7 @@ static int detach_tasks(struct lb_env *env)
  		detach_task(p, env);
  		list_add(&p->se.group_node, &env->tasks);
  
@@ -218,7 +228,7 @@ index 6efb1dfcd9..170b40d0ff 100644
  		detached++;
  
  #ifdef CONFIG_PREEMPTION
-@@ -9711,9 +9824,64 @@ static int detach_tasks(struct lb_env *env)
+@@ -9711,9 +9834,64 @@ static int detach_tasks(struct lb_env *env)
  		if (p->sched_task_hot)
  			schedstat_inc(p->stats.nr_failed_migrations_hot);
  
@@ -284,6 +294,14 @@ index 6efb1dfcd9..170b40d0ff 100644
  	/*
  	 * Right now, this is one of only two places we collect this stat
  	 * so we can safely collect detach_one_task() stats here rather
+@@ -11882,6 +12060,7 @@ static int sched_balance_rq(int this_cpu, struct rq *this_rq,
+ 			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
+ 			env.dst_cpu	 = env.new_dst_cpu;
+ 			env.flags	&= ~LBF_DST_PINNED;
++			env.flags	|= LBF_DST_REDIRECTED;
+ 			env.loop	 = 0;
+ 			env.loop_break	 = SCHED_NR_MIGRATE_BREAK;
+ 
 diff --git a/kernel/sched/features.h b/kernel/sched/features.h
 index da8ec0c23f..b2a489e5a8 100644
 --- a/kernel/sched/features.h

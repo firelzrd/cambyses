@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="304" viewBox="0 0 760 304" role="img" aria-labelledby="t d">
+<title id="t">Distribution of the time until the idle CPU gets work — lower is better</title>
+<desc id="d">Time until an idle CPU in another LLC gets work, and the hog work done during the free phase, upstream vs Cambyses, with and without a ticker on the idle CPU.</desc>
+<style>
+.title{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;fill:#0b0b0b}
+.head{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;fill:#0b0b0b}
+.sub{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.leg{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:12px;fill:#52514e}
+.lab{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:13px;fill:#0b0b0b}
+.val{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11.5px;fill:#0b0b0b}
+.ax{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:11px;fill:#8a8985}
+.bg{fill:#fcfcfb}
+.grid{stroke:#e6e5e0}
+.f1{fill:#2a78d6}
+.f2{fill:#eb6834}
+.l1{stroke:#2a78d6}
+.l2{stroke:#eb6834}
+.d1{fill:#2a78d6;stroke:#fcfcfb}
+.d2{fill:#eb6834;stroke:#fcfcfb}
+.k{fill:#52514e}
+.kd{fill:#52514e;stroke:#fcfcfb}
+.kl{stroke:#52514e}
+@media (prefers-color-scheme:dark){
+.title{fill:#f0efec}
+.head{fill:#f0efec}
+.sub{fill:#c3c2b7}
+.leg{fill:#c3c2b7}
+.lab{fill:#f0efec}
+.val{fill:#f0efec}
+.ax{fill:#8f8e88}
+.bg{fill:#1a1a19}
+.grid{stroke:#33332f}
+.f1{fill:#3987e5}
+.f2{fill:#d95926}
+.l1{stroke:#3987e5}
+.l2{stroke:#d95926}
+.d1{fill:#3987e5;stroke:#1a1a19}
+.d2{fill:#d95926;stroke:#1a1a19}
+.k{fill:#c3c2b7}
+.kd{fill:#c3c2b7;stroke:#1a1a19}
+.kl{stroke:#c3c2b7}
+}
+</style>
+<rect width="760" height="304" rx="8" class="bg"/>
+<text x="20" y="32" class="title">Distribution of the time until the idle CPU gets work — lower is better</text>
+<text x="20" y="52" class="sub">Ryzen AI MAX+ 395, Linux 6.18.62 + Cambyses 0.7.2, 4-CPU partition across two L3s · 6 ABBA blocks, 300 trials each</text>
+<rect x="20" y="74" width="22" height="8" rx="4" class="f1"/>
+<text x="50" y="82" class="lab">Upstream</text>
+<rect x="136.8" y="74" width="22" height="8" rx="4" class="f2"/>
+<text x="166.8" y="82" class="lab">Cambyses</text>
+<circle cx="259.6" cy="78" r="4.5" stroke-width="2" class="kd"/><text x="269.6" y="82" class="leg">median</text>
+<rect x="333.6" y="74" width="22" height="8" rx="4" class="k"/><text x="361.6" y="82" class="leg">p10–p90</text>
+<line x1="425.6" y1="78" x2="447.6" y2="78" stroke-width="2" class="kl"/><text x="453.6" y="82" class="leg">to p99</text>
+<line x1="170.0" y1="118" x2="170.0" y2="250" stroke-width="1" class="grid"/>
+<text x="170.0" y="266" text-anchor="middle" class="ax">0.1</text>
+<line x1="208.2" y1="118" x2="208.2" y2="250" stroke-width="1" class="grid"/>
+<text x="208.2" y="266" text-anchor="middle" class="ax">0.2</text>
+<line x1="258.8" y1="118" x2="258.8" y2="250" stroke-width="1" class="grid"/>
+<text x="258.8" y="266" text-anchor="middle" class="ax">0.5</text>
+<line x1="297.1" y1="118" x2="297.1" y2="250" stroke-width="1" class="grid"/>
+<text x="297.1" y="266" text-anchor="middle" class="ax">1</text>
+<line x1="335.3" y1="118" x2="335.3" y2="250" stroke-width="1" class="grid"/>
+<text x="335.3" y="266" text-anchor="middle" class="ax">2</text>
+<line x1="385.9" y1="118" x2="385.9" y2="250" stroke-width="1" class="grid"/>
+<text x="385.9" y="266" text-anchor="middle" class="ax">5</text>
+<line x1="424.1" y1="118" x2="424.1" y2="250" stroke-width="1" class="grid"/>
+<text x="424.1" y="266" text-anchor="middle" class="ax">10</text>
+<line x1="462.4" y1="118" x2="462.4" y2="250" stroke-width="1" class="grid"/>
+<text x="462.4" y="266" text-anchor="middle" class="ax">20</text>
+<line x1="512.9" y1="118" x2="512.9" y2="250" stroke-width="1" class="grid"/>
+<text x="512.9" y="266" text-anchor="middle" class="ax">50</text>
+<line x1="551.2" y1="118" x2="551.2" y2="250" stroke-width="1" class="grid"/>
+<text x="551.2" y="266" text-anchor="middle" class="ax">100</text>
+<line x1="589.4" y1="118" x2="589.4" y2="250" stroke-width="1" class="grid"/>
+<text x="589.4" y="266" text-anchor="middle" class="ax">200</text>
+<line x1="640.0" y1="118" x2="640.0" y2="250" stroke-width="1" class="grid"/>
+<text x="640.0" y="266" text-anchor="middle" class="ax">500</text>
+<text x="405" y="284" text-anchor="middle" class="ax">ms, log scale; values below 0.1 drawn at 0.1</text>
+<text x="20" y="149.0" class="lab">duty 6 / 4 ms</text>
+<text x="20" y="165.0" class="ax">ticker 100 µs</text>
+<g><title>Upstream, duty 6/4, ticker 100 µs: p10 1.3, median 27.5, p90 151.9, p99 372.9 ms (n=300)</title>
+<line x1="574.3" y1="134" x2="623.8" y2="134" stroke-width="2" class="l1"/>
+<rect x="313.5" y="130" width="260.7" height="8" rx="4" class="f1"/>
+<circle cx="480.0" cy="134" r="5" stroke-width="2" class="d1"/>
+</g>
+<g><title>Cambyses, duty 6/4, ticker 100 µs: p10 0.2, median 8.6, p90 20.9, p99 68.9 ms (n=300)</title>
+<line x1="464.9" y1="156" x2="530.7" y2="156" stroke-width="2" class="l2"/>
+<rect x="212.2" y="152" width="252.7" height="8" rx="4" class="f2"/>
+<circle cx="415.5" cy="156" r="5" stroke-width="2" class="d2"/>
+</g>
+<text x="20" y="215.0" class="lab">duty 4 / 6 ms</text>
+<text x="20" y="231.0" class="ax">ticker 100 µs</text>
+<g><title>Upstream, duty 4/6, ticker 100 µs: p10 0.0, median 4.8, p90 21.2, p99 156.9 ms (n=300)</title>
+<line x1="465.6" y1="200" x2="576.1" y2="200" stroke-width="2" class="l1"/>
+<rect x="170.0" y="196" width="295.6" height="8" rx="4" class="f1"/>
+<circle cx="383.6" cy="200" r="5" stroke-width="2" class="d1"/>
+</g>
+<g><title>Cambyses, duty 4/6, ticker 100 µs: p10 0.2, median 2.0, p90 11.9, p99 37.5 ms (n=300)</title>
+<line x1="433.9" y1="222" x2="497.1" y2="222" stroke-width="2" class="l2"/>
+<rect x="195.6" y="218" width="238.4" height="8" rx="4" class="f2"/>
+<circle cx="334.3" cy="222" r="5" stroke-width="2" class="d2"/>
+</g>
+</svg>

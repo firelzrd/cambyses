@@ -1,0 +1,852 @@
+###### LBMIX2-START gov=powersave cfgs=[base v060 v072] N=4 fps=[0 256] hogs=24 kern=6.18.62-cambysesx ######
+SCHB_BEGIN base.F0.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (195518 total samples)
+	  50.0th: 2          (65415 samples)
+	  90.0th: 4          (66840 samples)
+	* 99.0th: 7          (12717 samples)
+	  99.9th: 677        (1263 samples)
+	  min=1, max=5516
+Request Latencies percentiles (usec) runtime 8 (s) (196691 total samples)
+	  50.0th: 152        (74647 samples)
+	  90.0th: 159        (57007 samples)
+	* 99.0th: 164        (17106 samples)
+	  99.9th: 319        (753 samples)
+	  min=102, max=5762
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 23904      (2 samples)
+	* 50.0th: 24544      (3 samples)
+	  90.0th: 24864      (4 samples)
+	  min=23928, max=24870
+average rps: 24586.38
+sched delay: message 2 (usec) worker 0 (usec)
+LBC base.F0.r0 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F0.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2404    balanced=1636    failed=425     moved=0       hot_moved=0
+  idle     calls=0       balanced=3       failed=1632    moved=31006   hot_moved=4
+  newidle  calls=5       balanced=0       failed=1       moved=0       hot_moved=31009
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=299     balanced=212     failed=73      moved=0       hot_moved=0
+  idle     calls=9       balanced=0       failed=84      moved=3727    hot_moved=43
+  newidle  calls=45      balanced=0       failed=72      moved=3       hot_moved=1718
+  active   alb_count=71
+SCHB_END base.F0.r0
+HOG base.F0.r0 bogo=11584.21
+SCHB_BEGIN base.F256.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3873 total samples)
+	  50.0th: 2          (744 samples)
+	  90.0th: 3308       (1352 samples)
+	* 99.0th: 3756       (347 samples)
+	  99.9th: 3796       (34 samples)
+	  min=1, max=3826
+Request Latencies percentiles (usec) runtime 8 (s) (3873 total samples)
+	  50.0th: 7256       (1300 samples)
+	  90.0th: 8240       (1412 samples)
+	* 99.0th: 10224      (337 samples)
+	  99.9th: 11536      (33 samples)
+	  min=3801, max=13255
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 454        (2 samples)
+	* 50.0th: 485        (3 samples)
+	  90.0th: 492        (4 samples)
+	  min=454, max=492
+average rps: 484.12
+sched delay: message 0 (usec) worker 0 (usec)
+LBC base.F256.r0 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F256.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2325    balanced=1814    failed=283     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1814    moved=29958   hot_moved=3
+  newidle  calls=7       balanced=0       failed=3       moved=0       hot_moved=29958
+
+-- domain1 (LLC) --
+  busy     calls=299     balanced=211     failed=66      moved=0       hot_moved=0
+  idle     calls=5       balanced=0       failed=83      moved=3903    hot_moved=31
+  newidle  calls=34      balanced=0       failed=40      moved=2       hot_moved=1895
+  active   alb_count=39 alb_failed=32
+SCHB_END base.F256.r0
+HOG base.F256.r0 bogo=10763.47
+SCHB_BEGIN v060.F0.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (194509 total samples)
+	  50.0th: 2          (63617 samples)
+	  90.0th: 4          (65702 samples)
+	* 99.0th: 6          (11818 samples)
+	  99.9th: 156        (1407 samples)
+	  min=1, max=4903
+Request Latencies percentiles (usec) runtime 8 (s) (197919 total samples)
+	  50.0th: 152        (61718 samples)
+	  90.0th: 158        (72281 samples)
+	* 99.0th: 164        (16570 samples)
+	  99.9th: 321        (1596 samples)
+	  min=102, max=5911
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24352      (2 samples)
+	* 50.0th: 24800      (3 samples)
+	  90.0th: 25056      (4 samples)
+	  min=24354, max=25058
+average rps: 24739.88
+sched delay: message 2 (usec) worker 0 (usec)
+LBC v060.F0.r0 conceded=410 newidle=0 idle=0 busy=410 over2x=86 redir=0
+=== load-balance activity v060.F0.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2375    balanced=1708    failed=267     moved=0       hot_moved=0
+  idle     calls=0       balanced=2       failed=1705    moved=31826   hot_moved=5
+  newidle  calls=5       balanced=0       failed=0       moved=0       hot_moved=31827
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=311     balanced=197     failed=58      moved=0       hot_moved=0
+  idle     calls=2       balanced=0       failed=69      moved=3705    hot_moved=34
+  newidle  calls=39      balanced=0       failed=39      moved=5       hot_moved=1698
+  active   alb_count=108
+SCHB_END v060.F0.r0
+HOG v060.F0.r0 bogo=11736.36
+SCHB_BEGIN v060.F256.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3618 total samples)
+	  50.0th: 2          (651 samples)
+	  90.0th: 3356       (1329 samples)
+	* 99.0th: 3772       (329 samples)
+	  99.9th: 4052       (28 samples)
+	  min=1, max=5742
+Request Latencies percentiles (usec) runtime 8 (s) (3620 total samples)
+	  50.0th: 7256       (1081 samples)
+	  90.0th: 8944       (1428 samples)
+	* 99.0th: 19936      (327 samples)
+	  99.9th: 20640      (31 samples)
+	  min=3749, max=21470
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 399        (2 samples)
+	* 50.0th: 449        (3 samples)
+	  90.0th: 496        (4 samples)
+	  min=399, max=496
+average rps: 452.50
+sched delay: message 0 (usec) worker 347 (usec)
+LBC v060.F256.r0 conceded=278 newidle=0 idle=0 busy=278 over2x=64 redir=0
+=== load-balance activity v060.F256.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2303    balanced=1851    failed=187     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1851    moved=30931   hot_moved=5
+  newidle  calls=9       balanced=0       failed=2       moved=0       hot_moved=30932
+  active   alb_count=2
+
+-- domain1 (LLC) --
+  busy     calls=298     balanced=216     failed=40      moved=0       hot_moved=0
+  idle     calls=2       balanced=0       failed=88      moved=3650    hot_moved=35
+  newidle  calls=37      balanced=0       failed=49      moved=0       hot_moved=1651
+  active   alb_count=50 alb_failed=52
+SCHB_END v060.F256.r0
+HOG v060.F256.r0 bogo=10858.59
+SCHB_BEGIN v072.F0.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (195418 total samples)
+	  50.0th: 2          (65982 samples)
+	  90.0th: 4          (70704 samples)
+	* 99.0th: 6          (9054 samples)
+	  99.9th: 157        (1532 samples)
+	  min=1, max=3544
+Request Latencies percentiles (usec) runtime 8 (s) (198211 total samples)
+	  50.0th: 152        (79498 samples)
+	  90.0th: 156        (49956 samples)
+	* 99.0th: 164        (16675 samples)
+	  99.9th: 308        (339 samples)
+	  min=102, max=6059
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24608      (2 samples)
+	* 50.0th: 24736      (3 samples)
+	  90.0th: 24928      (4 samples)
+	  min=24634, max=24959
+average rps: 24776.38
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v072.F0.r0 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F0.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2423    balanced=1669    failed=412     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1668    moved=30985   hot_moved=4
+  newidle  calls=4       balanced=0       failed=0       moved=0       hot_moved=30987
+
+-- domain1 (LLC) --
+  busy     calls=303     balanced=209     failed=78      moved=0       hot_moved=0
+  idle     calls=5       balanced=1       failed=80      moved=3714    hot_moved=30
+  newidle  calls=31      balanced=0       failed=34      moved=2       hot_moved=1710
+  active   alb_count=24
+SCHB_END v072.F0.r0
+HOG v072.F0.r0 bogo=11798.75
+SCHB_BEGIN v072.F256.r0
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3904 total samples)
+	  50.0th: 2          (747 samples)
+	  90.0th: 3292       (1287 samples)
+	* 99.0th: 3764       (346 samples)
+	  99.9th: 3796       (32 samples)
+	  min=1, max=3802
+Request Latencies percentiles (usec) runtime 8 (s) (3906 total samples)
+	  50.0th: 7224       (1083 samples)
+	  90.0th: 8240       (1648 samples)
+	* 99.0th: 10128      (257 samples)
+	  99.9th: 12944      (31 samples)
+	  min=3783, max=16166
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 477        (2 samples)
+	* 50.0th: 487        (5 samples)
+	  90.0th: 492        (2 samples)
+	  min=477, max=492
+average rps: 488.25
+sched delay: message 0 (usec) worker 656 (usec)
+LBC v072.F256.r0 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F256.r0 ===
+
+-- domain0 (SMT) --
+  busy     calls=2334    balanced=1806    failed=293     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1805    moved=31003   hot_moved=4
+  newidle  calls=5       balanced=0       failed=1       moved=0       hot_moved=31005
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=303     balanced=210     failed=70      moved=0       hot_moved=0
+  idle     calls=5       balanced=0       failed=82      moved=3801    hot_moved=38
+  newidle  calls=41      balanced=0       failed=47      moved=4       hot_moved=1799
+  active   alb_count=53
+SCHB_END v072.F256.r0
+HOG v072.F256.r0 bogo=10841.88
+SCHB_BEGIN v060.F0.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (197555 total samples)
+	  50.0th: 2          (64392 samples)
+	  90.0th: 4          (68223 samples)
+	* 99.0th: 6          (8568 samples)
+	  99.9th: 156        (1666 samples)
+	  min=1, max=4006
+Request Latencies percentiles (usec) runtime 8 (s) (198742 total samples)
+	  50.0th: 152        (77388 samples)
+	  90.0th: 157        (63253 samples)
+	* 99.0th: 164        (17647 samples)
+	  99.9th: 318        (409 samples)
+	  min=102, max=5614
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24416      (3 samples)
+	* 50.0th: 24800      (2 samples)
+	  90.0th: 25184      (4 samples)
+	  min=24433, max=25183
+average rps: 24842.75
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v060.F0.r1 conceded=397 newidle=0 idle=0 busy=397 over2x=77 redir=0
+=== load-balance activity v060.F0.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2368    balanced=1692    failed=272     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1689    moved=30989   hot_moved=2
+  newidle  calls=3       balanced=0       failed=1       moved=0       hot_moved=30991
+
+-- domain1 (LLC) --
+  busy     calls=302     balanced=207     failed=46      moved=0       hot_moved=0
+  idle     calls=5       balanced=0       failed=79      moved=3813    hot_moved=30
+  newidle  calls=35      balanced=0       failed=33      moved=0       hot_moved=1810
+  active   alb_count=28
+SCHB_END v060.F0.r1
+HOG v060.F0.r1 bogo=11824.68
+SCHB_BEGIN v060.F256.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3817 total samples)
+	  50.0th: 2          (622 samples)
+	  90.0th: 3292       (1122 samples)
+	* 99.0th: 3756       (344 samples)
+	  99.9th: 3804       (36 samples)
+	  min=1, max=4023
+Request Latencies percentiles (usec) runtime 8 (s) (3817 total samples)
+	  50.0th: 7240       (1220 samples)
+	  90.0th: 8272       (1490 samples)
+	* 99.0th: 10448      (299 samples)
+	  99.9th: 25632      (34 samples)
+	  min=3750, max=35854
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 450        (2 samples)
+	* 50.0th: 479        (3 samples)
+	  90.0th: 490        (4 samples)
+	  min=450, max=490
+average rps: 477.12
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v060.F256.r1 conceded=330 newidle=1 idle=0 busy=329 over2x=94 redir=0
+=== load-balance activity v060.F256.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2308    balanced=1811    failed=201     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1811    moved=31453   hot_moved=6
+  newidle  calls=9       balanced=0       failed=3       moved=0       hot_moved=31453
+
+-- domain1 (LLC) --
+  busy     calls=313     balanced=203     failed=51      moved=0       hot_moved=0
+  idle     calls=1       balanced=0       failed=75      moved=3774    hot_moved=39
+  newidle  calls=40      balanced=0       failed=33      moved=3       hot_moved=1764
+  active   alb_count=30 alb_failed=34
+SCHB_END v060.F256.r1
+HOG v060.F256.r1 bogo=10884.45
+SCHB_BEGIN v072.F0.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (196825 total samples)
+	  50.0th: 2          (64109 samples)
+	  90.0th: 4          (74146 samples)
+	* 99.0th: 7          (9244 samples)
+	  99.9th: 156        (594 samples)
+	  min=1, max=3466
+Request Latencies percentiles (usec) runtime 8 (s) (199467 total samples)
+	  50.0th: 152        (71927 samples)
+	  90.0th: 156        (64337 samples)
+	* 99.0th: 163        (16492 samples)
+	  99.9th: 308        (1579 samples)
+	  min=102, max=4000
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24672      (2 samples)
+	* 50.0th: 24928      (3 samples)
+	  90.0th: 25120      (4 samples)
+	  min=24687, max=25122
+average rps: 24933.38
+sched delay: message 2 (usec) worker 0 (usec)
+LBC v072.F0.r1 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F0.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2413    balanced=1654    failed=403     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1652    moved=31021   hot_moved=7
+  newidle  calls=10      balanced=0       failed=2       moved=0       hot_moved=31022
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=297     balanced=215     failed=69      moved=0       hot_moved=0
+  idle     calls=3       balanced=0       failed=87      moved=3898    hot_moved=37
+  newidle  calls=41      balanced=0       failed=85      moved=4       hot_moved=1886
+  active   alb_count=90
+SCHB_END v072.F0.r1
+HOG v072.F0.r1 bogo=11855.64
+SCHB_BEGIN v072.F256.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3875 total samples)
+	  50.0th: 2          (831 samples)
+	  90.0th: 3220       (1182 samples)
+	* 99.0th: 3764       (354 samples)
+	  99.9th: 3796       (30 samples)
+	  min=1, max=4068
+Request Latencies percentiles (usec) runtime 8 (s) (3879 total samples)
+	  50.0th: 7192       (1153 samples)
+	  90.0th: 8208       (1556 samples)
+	* 99.0th: 13168      (328 samples)
+	  99.9th: 20128      (35 samples)
+	  min=3813, max=21875
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 441        (2 samples)
+	* 50.0th: 489        (4 samples)
+	  90.0th: 494        (3 samples)
+	  min=441, max=494
+average rps: 484.88
+sched delay: message 0 (usec) worker 647 (usec)
+LBC v072.F256.r1 conceded=1 newidle=1 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F256.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2329    balanced=1810    failed=278     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1810    moved=31364   hot_moved=3
+  newidle  calls=7       balanced=0       failed=4       moved=0       hot_moved=31367
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=302     balanced=211     failed=64      moved=0       hot_moved=0
+  idle     calls=7       balanced=0       failed=83      moved=3945    hot_moved=16
+  newidle  calls=17      balanced=0       failed=31      moved=3       hot_moved=1944
+  active   alb_count=37 alb_failed=26
+SCHB_END v072.F256.r1
+HOG v072.F256.r1 bogo=10942.06
+SCHB_BEGIN base.F0.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (197318 total samples)
+	  50.0th: 2          (66402 samples)
+	  90.0th: 4          (68459 samples)
+	* 99.0th: 6          (9405 samples)
+	  99.9th: 157        (1704 samples)
+	  min=1, max=3380
+Request Latencies percentiles (usec) runtime 8 (s) (198536 total samples)
+	  50.0th: 152        (77639 samples)
+	  90.0th: 158        (57209 samples)
+	* 99.0th: 164        (16520 samples)
+	  99.9th: 308        (435 samples)
+	  min=102, max=5072
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24480      (2 samples)
+	* 50.0th: 24736      (3 samples)
+	  90.0th: 25120      (4 samples)
+	  min=24484, max=25092
+average rps: 24817.00
+sched delay: message 0 (usec) worker 0 (usec)
+LBC base.F0.r1 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F0.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2409    balanced=1678    failed=398     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1677    moved=31788   hot_moved=5
+  newidle  calls=8       balanced=0       failed=1       moved=0       hot_moved=31786
+
+-- domain1 (LLC) --
+  busy     calls=295     balanced=218     failed=65      moved=0       hot_moved=0
+  idle     calls=6       balanced=0       failed=90      moved=3677    hot_moved=50
+  newidle  calls=51      balanced=0       failed=75      moved=0       hot_moved=1670
+  active   alb_count=63
+SCHB_END base.F0.r1
+HOG base.F0.r1 bogo=11877.94
+SCHB_BEGIN base.F256.r1
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3806 total samples)
+	  50.0th: 2          (695 samples)
+	  90.0th: 3316       (1337 samples)
+	* 99.0th: 3764       (348 samples)
+	  99.9th: 4004       (30 samples)
+	  min=1, max=5504
+Request Latencies percentiles (usec) runtime 8 (s) (3807 total samples)
+	  50.0th: 7256       (1122 samples)
+	  90.0th: 8272       (1467 samples)
+	* 99.0th: 10128      (307 samples)
+	  99.9th: 11056      (35 samples)
+	  min=3693, max=11711
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 449        (3 samples)
+	* 50.0th: 482        (2 samples)
+	  90.0th: 496        (4 samples)
+	  min=449, max=496
+average rps: 475.88
+sched delay: message 0 (usec) worker 0 (usec)
+LBC base.F256.r1 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F256.r1 ===
+
+-- domain0 (SMT) --
+  busy     calls=2310    balanced=1808    failed=270     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1808    moved=31074   hot_moved=2
+  newidle  calls=5       balanced=0       failed=3       moved=0       hot_moved=31077
+
+-- domain1 (LLC) --
+  busy     calls=296     balanced=215     failed=60      moved=0       hot_moved=0
+  idle     calls=7       balanced=0       failed=87      moved=3742    hot_moved=21
+  newidle  calls=22      balanced=0       failed=25      moved=3       hot_moved=1734
+  active   alb_count=19
+SCHB_END base.F256.r1
+HOG base.F256.r1 bogo=10852.34
+SCHB_BEGIN v072.F0.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (196979 total samples)
+	  50.0th: 2          (62797 samples)
+	  90.0th: 4          (63694 samples)
+	* 99.0th: 6          (10633 samples)
+	  99.9th: 156        (1432 samples)
+	  min=1, max=4007
+Request Latencies percentiles (usec) runtime 8 (s) (198437 total samples)
+	  50.0th: 152        (75938 samples)
+	  90.0th: 159        (64158 samples)
+	* 99.0th: 164        (16865 samples)
+	  99.9th: 319        (412 samples)
+	  min=102, max=5529
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24416      (2 samples)
+	* 50.0th: 24864      (5 samples)
+	  90.0th: 25056      (2 samples)
+	  min=24434, max=25059
+average rps: 24804.62
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v072.F0.r2 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F0.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2463    balanced=1623    failed=453     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1623    moved=32043   hot_moved=5
+  newidle  calls=7       balanced=0       failed=1       moved=0       hot_moved=32046
+
+-- domain1 (LLC) --
+  busy     calls=291     balanced=217     failed=62      moved=0       hot_moved=0
+  idle     calls=4       balanced=0       failed=89      moved=3821    hot_moved=33
+  newidle  calls=33      balanced=0       failed=32      moved=0       hot_moved=1819
+  active   alb_count=22
+SCHB_END v072.F0.r2
+HOG v072.F0.r2 bogo=11894.90
+SCHB_BEGIN v072.F256.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3921 total samples)
+	  50.0th: 2          (871 samples)
+	  90.0th: 3276       (1328 samples)
+	* 99.0th: 3756       (352 samples)
+	  99.9th: 3804       (36 samples)
+	  min=1, max=4083
+Request Latencies percentiles (usec) runtime 8 (s) (3921 total samples)
+	  50.0th: 7224       (1238 samples)
+	  90.0th: 8208       (1494 samples)
+	* 99.0th: 10096      (349 samples)
+	  99.9th: 11184      (35 samples)
+	  min=3776, max=13302
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 483        (2 samples)
+	* 50.0th: 487        (3 samples)
+	  90.0th: 495        (4 samples)
+	  min=483, max=495
+average rps: 490.12
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v072.F256.r2 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F256.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2303    balanced=1836    failed=251     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1835    moved=30597   hot_moved=5
+  newidle  calls=9       balanced=0       failed=3       moved=0       hot_moved=30603
+  active   alb_count=2
+
+-- domain1 (LLC) --
+  busy     calls=297     balanced=210     failed=68      moved=0       hot_moved=0
+  idle     calls=6       balanced=0       failed=82      moved=3725    hot_moved=42
+  newidle  calls=49      balanced=0       failed=64      moved=5       hot_moved=1721
+  active   alb_count=56 alb_failed=48
+SCHB_END v072.F256.r2
+HOG v072.F256.r2 bogo=10904.62
+SCHB_BEGIN base.F0.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (195338 total samples)
+	  50.0th: 2          (65630 samples)
+	  90.0th: 4          (74148 samples)
+	* 99.0th: 7          (10377 samples)
+	  99.9th: 156        (1239 samples)
+	  min=1, max=3759
+Request Latencies percentiles (usec) runtime 8 (s) (197910 total samples)
+	  50.0th: 152        (81953 samples)
+	  90.0th: 156        (59099 samples)
+	* 99.0th: 164        (16761 samples)
+	  99.9th: 308        (286 samples)
+	  min=102, max=4158
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24608      (2 samples)
+	* 50.0th: 24736      (5 samples)
+	  90.0th: 24800      (2 samples)
+	  min=24597, max=24806
+average rps: 24738.75
+sched delay: message 2 (usec) worker 0 (usec)
+LBC base.F0.r2 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F0.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2434    balanced=1651    failed=433     moved=0       hot_moved=0
+  idle     calls=0       balanced=4       failed=1647    moved=31131   hot_moved=3
+  newidle  calls=3       balanced=0       failed=0       moved=0       hot_moved=31133
+
+-- domain1 (LLC) --
+  busy     calls=294     balanced=215     failed=65      moved=0       hot_moved=0
+  idle     calls=1       balanced=0       failed=87      moved=3352    hot_moved=23
+  newidle  calls=24      balanced=0       failed=19      moved=2       hot_moved=1347
+  active   alb_count=21
+SCHB_END base.F0.r2
+HOG base.F0.r2 bogo=11894.98
+SCHB_BEGIN base.F256.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3896 total samples)
+	  50.0th: 2          (667 samples)
+	  90.0th: 3316       (1195 samples)
+	* 99.0th: 3764       (353 samples)
+	  99.9th: 3796       (28 samples)
+	  min=1, max=3999
+Request Latencies percentiles (usec) runtime 8 (s) (3896 total samples)
+	  50.0th: 7224       (1138 samples)
+	  90.0th: 8208       (1543 samples)
+	* 99.0th: 10160      (320 samples)
+	  99.9th: 13040      (30 samples)
+	  min=3805, max=16156
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 476        (2 samples)
+	* 50.0th: 485        (3 samples)
+	  90.0th: 493        (4 samples)
+	  min=476, max=493
+average rps: 487.00
+sched delay: message 0 (usec) worker 0 (usec)
+LBC base.F256.r2 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F256.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2310    balanced=1818    failed=272     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1818    moved=31128   hot_moved=2
+  newidle  calls=3       balanced=0       failed=1       moved=0       hot_moved=31130
+  active   alb_count=2
+
+-- domain1 (LLC) --
+  busy     calls=303     balanced=211     failed=66      moved=0       hot_moved=0
+  idle     calls=10      balanced=0       failed=82      moved=3726    hot_moved=32
+  newidle  calls=35      balanced=0       failed=52      moved=0       hot_moved=1717
+  active   alb_count=51 alb_failed=188
+SCHB_END base.F256.r2
+HOG base.F256.r2 bogo=10879.69
+SCHB_BEGIN v060.F0.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (196062 total samples)
+	  50.0th: 2          (60715 samples)
+	  90.0th: 4          (61430 samples)
+	* 99.0th: 6          (11723 samples)
+	  99.9th: 154        (1563 samples)
+	  min=1, max=4221
+Request Latencies percentiles (usec) runtime 8 (s) (197072 total samples)
+	  50.0th: 152        (67624 samples)
+	  90.0th: 160        (68788 samples)
+	* 99.0th: 164        (16606 samples)
+	  99.9th: 689        (614 samples)
+	  min=102, max=6056
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24288      (3 samples)
+	* 50.0th: 24544      (3 samples)
+	  90.0th: 24992      (3 samples)
+	  min=24272, max=25017
+average rps: 24634.00
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v060.F0.r2 conceded=400 newidle=0 idle=0 busy=400 over2x=68 redir=0
+=== load-balance activity v060.F0.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2387    balanced=1700    failed=270     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1699    moved=31101   hot_moved=8
+  newidle  calls=8       balanced=0       failed=0       moved=0       hot_moved=31103
+
+-- domain1 (LLC) --
+  busy     calls=300     balanced=209     failed=56      moved=0       hot_moved=0
+  idle     calls=6       balanced=0       failed=81      moved=3656    hot_moved=26
+  newidle  calls=27      balanced=0       failed=34      moved=3       hot_moved=1653
+  active   alb_count=28
+SCHB_END v060.F0.r2
+HOG v060.F0.r2 bogo=11918.43
+SCHB_BEGIN v060.F256.r2
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3564 total samples)
+	  50.0th: 2          (707 samples)
+	  90.0th: 3276       (1222 samples)
+	* 99.0th: 3780       (324 samples)
+	  99.9th: 4076       (28 samples)
+	  min=1, max=6008
+Request Latencies percentiles (usec) runtime 8 (s) (3569 total samples)
+	  50.0th: 7224       (1085 samples)
+	  90.0th: 10064      (1354 samples)
+	* 99.0th: 20128      (324 samples)
+	  99.9th: 20704      (23 samples)
+	  min=3726, max=20985
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 352        (2 samples)
+	* 50.0th: 458        (3 samples)
+	  90.0th: 491        (4 samples)
+	  min=352, max=491
+average rps: 446.12
+sched delay: message 0 (usec) worker 340 (usec)
+LBC v060.F256.r2 conceded=338 newidle=5 idle=0 busy=333 over2x=86 redir=0
+=== load-balance activity v060.F256.r2 ===
+
+-- domain0 (SMT) --
+  busy     calls=2323    balanced=1819    failed=199     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1819    moved=32106   hot_moved=8
+  newidle  calls=12      balanced=0       failed=4       moved=0       hot_moved=32106
+
+-- domain1 (LLC) --
+  busy     calls=313     balanced=203     failed=54      moved=0       hot_moved=0
+  idle     calls=2       balanced=0       failed=73      moved=3896    hot_moved=20
+  newidle  calls=20      balanced=0       failed=28      moved=0       hot_moved=1889
+  active   alb_count=28 alb_failed=76
+SCHB_END v060.F256.r2
+HOG v060.F256.r2 bogo=10976.29
+SCHB_BEGIN base.F0.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (197669 total samples)
+	  50.0th: 2          (64871 samples)
+	  90.0th: 4          (65168 samples)
+	* 99.0th: 6          (8914 samples)
+	  99.9th: 156        (1647 samples)
+	  min=1, max=3845
+Request Latencies percentiles (usec) runtime 8 (s) (198609 total samples)
+	  50.0th: 152        (75689 samples)
+	  90.0th: 158        (64335 samples)
+	* 99.0th: 164        (17901 samples)
+	  99.9th: 319        (435 samples)
+	  min=102, max=5121
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24544      (2 samples)
+	* 50.0th: 24800      (3 samples)
+	  90.0th: 24992      (4 samples)
+	  min=24568, max=24965
+average rps: 24826.12
+sched delay: message 2 (usec) worker 0 (usec)
+LBC base.F0.r3 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F0.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2424    balanced=1661    failed=414     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1661    moved=30228   hot_moved=3
+  newidle  calls=5       balanced=0       failed=0       moved=0       hot_moved=30228
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=298     balanced=211     failed=69      moved=0       hot_moved=0
+  idle     calls=15      balanced=0       failed=83      moved=3828    hot_moved=28
+  newidle  calls=33      balanced=0       failed=54      moved=9       hot_moved=1810
+  active   alb_count=50
+SCHB_END base.F0.r3
+HOG base.F0.r3 bogo=11918.24
+SCHB_BEGIN base.F256.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3665 total samples)
+	  50.0th: 2          (807 samples)
+	  90.0th: 3316       (1359 samples)
+	* 99.0th: 3780       (340 samples)
+	  99.9th: 4012       (22 samples)
+	  min=1, max=4893
+Request Latencies percentiles (usec) runtime 8 (s) (3667 total samples)
+	  50.0th: 7224       (1101 samples)
+	  90.0th: 8848       (1413 samples)
+	* 99.0th: 20000      (320 samples)
+	  99.9th: 23008      (26 samples)
+	  min=3764, max=41009
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 403        (2 samples)
+	* 50.0th: 452        (3 samples)
+	  90.0th: 499        (4 samples)
+	  min=403, max=499
+average rps: 458.38
+sched delay: message 0 (usec) worker 338 (usec)
+LBC base.F256.r3 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity base.F256.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2323    balanced=1816    failed=269     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1816    moved=31047   hot_moved=5
+  newidle  calls=11      balanced=0       failed=6       moved=0       hot_moved=31052
+
+-- domain1 (LLC) --
+  busy     calls=301     balanced=210     failed=70      moved=0       hot_moved=0
+  idle     calls=4       balanced=0       failed=82      moved=3406    hot_moved=26
+  newidle  calls=25      balanced=0       failed=31      moved=1       hot_moved=1397
+  active   alb_count=31 alb_failed=150
+SCHB_END base.F256.r3
+HOG base.F256.r3 bogo=10905.86
+SCHB_BEGIN v060.F0.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (196036 total samples)
+	  50.0th: 2          (67307 samples)
+	  90.0th: 4          (63857 samples)
+	* 99.0th: 6          (7078 samples)
+	  99.9th: 154        (1267 samples)
+	  min=1, max=4058
+Request Latencies percentiles (usec) runtime 8 (s) (198316 total samples)
+	  50.0th: 152        (75006 samples)
+	  90.0th: 157        (63069 samples)
+	* 99.0th: 164        (17895 samples)
+	  99.9th: 315        (589 samples)
+	  min=102, max=5995
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24416      (2 samples)
+	* 50.0th: 24800      (3 samples)
+	  90.0th: 24992      (4 samples)
+	  min=24414, max=24980
+average rps: 24789.50
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v060.F0.r3 conceded=395 newidle=0 idle=0 busy=395 over2x=91 redir=0
+=== load-balance activity v060.F0.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2352    balanced=1714    failed=257     moved=0       hot_moved=0
+  idle     calls=0       balanced=2       failed=1711    moved=30985   hot_moved=5
+  newidle  calls=5       balanced=0       failed=0       moved=0       hot_moved=30990
+
+-- domain1 (LLC) --
+  busy     calls=302     balanced=203     failed=49      moved=0       hot_moved=0
+  idle     calls=3       balanced=0       failed=77      moved=3644    hot_moved=26
+  newidle  calls=28      balanced=0       failed=64      moved=0       hot_moved=1709
+  active   alb_count=62
+SCHB_END v060.F0.r3
+HOG v060.F0.r3 bogo=11919.18
+SCHB_BEGIN v060.F256.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3763 total samples)
+	  50.0th: 2          (546 samples)
+	  90.0th: 3300       (1108 samples)
+	* 99.0th: 3772       (336 samples)
+	  99.9th: 4012       (34 samples)
+	  min=1, max=5681
+Request Latencies percentiles (usec) runtime 8 (s) (3763 total samples)
+	  50.0th: 7240       (1174 samples)
+	  90.0th: 8304       (1382 samples)
+	* 99.0th: 14288      (336 samples)
+	  99.9th: 29344      (34 samples)
+	  min=3792, max=38863
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 396        (2 samples)
+	* 50.0th: 480        (3 samples)
+	  90.0th: 493        (4 samples)
+	  min=396, max=493
+average rps: 470.38
+sched delay: message 0 (usec) worker 338 (usec)
+LBC v060.F256.r3 conceded=308 newidle=4 idle=0 busy=304 over2x=97 redir=0
+=== load-balance activity v060.F256.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2287    balanced=1838    failed=179     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1838    moved=31071   hot_moved=3
+  newidle  calls=5       balanced=0       failed=2       moved=0       hot_moved=31072
+
+-- domain1 (LLC) --
+  busy     calls=311     balanced=204     failed=46      moved=0       hot_moved=0
+  idle     calls=2       balanced=0       failed=75      moved=3682    hot_moved=29
+  newidle  calls=30      balanced=0       failed=22      moved=3       hot_moved=1668
+  active   alb_count=18 alb_failed=10
+SCHB_END v060.F256.r3
+HOG v060.F256.r3 bogo=10929.34
+SCHB_BEGIN v072.F0.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (194985 total samples)
+	  50.0th: 2          (69544 samples)
+	  90.0th: 4          (65680 samples)
+	* 99.0th: 6          (6232 samples)
+	  99.9th: 156        (1285 samples)
+	  min=1, max=3745
+Request Latencies percentiles (usec) runtime 8 (s) (199811 total samples)
+	  50.0th: 152        (76212 samples)
+	  90.0th: 156        (62082 samples)
+	* 99.0th: 163        (15796 samples)
+	  99.9th: 371        (1575 samples)
+	  min=102, max=5127
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 24800      (2 samples)
+	* 50.0th: 24992      (3 samples)
+	  90.0th: 25120      (4 samples)
+	  min=24781, max=25108
+average rps: 24976.38
+sched delay: message 0 (usec) worker 0 (usec)
+LBC v072.F0.r3 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F0.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2425    balanced=1663    failed=392     moved=0       hot_moved=0
+  idle     calls=0       balanced=1       failed=1662    moved=30403   hot_moved=7
+  newidle  calls=8       balanced=0       failed=1       moved=0       hot_moved=30409
+  active   alb_count=1
+
+-- domain1 (LLC) --
+  busy     calls=303     balanced=209     failed=74      moved=0       hot_moved=0
+  idle     calls=10      balanced=0       failed=81      moved=3645    hot_moved=24
+  newidle  calls=27      balanced=0       failed=22      moved=0       hot_moved=1641
+  active   alb_count=19
+SCHB_END v072.F0.r3
+HOG v072.F0.r3 bogo=11929.42
+SCHB_BEGIN v072.F256.r3
+Wakeup Latencies percentiles (usec) runtime 8 (s) (3934 total samples)
+	  50.0th: 2          (686 samples)
+	  90.0th: 3268       (1228 samples)
+	* 99.0th: 3764       (354 samples)
+	  99.9th: 3796       (31 samples)
+	  min=1, max=3844
+Request Latencies percentiles (usec) runtime 8 (s) (3936 total samples)
+	  50.0th: 7208       (1219 samples)
+	  90.0th: 8208       (1504 samples)
+	* 99.0th: 10064      (282 samples)
+	  99.9th: 10864      (36 samples)
+	  min=3758, max=12825
+RPS percentiles (requests) runtime 8 (s) (9 total samples)
+	  20.0th: 483        (2 samples)
+	* 50.0th: 491        (4 samples)
+	  90.0th: 501        (3 samples)
+	  min=483, max=501
+average rps: 492.00
+sched delay: message 0 (usec) worker 321 (usec)
+LBC v072.F256.r3 conceded=0 newidle=0 idle=0 busy=0 over2x=0 redir=0
+=== load-balance activity v072.F256.r3 ===
+
+-- domain0 (SMT) --
+  busy     calls=2307    balanced=1812    failed=266     moved=0       hot_moved=0
+  idle     calls=0       balanced=0       failed=1812    moved=29423   hot_moved=3
+  newidle  calls=10      balanced=0       failed=5       moved=0       hot_moved=29421
+
+-- domain1 (LLC) --
+  busy     calls=309     balanced=205     failed=78      moved=0       hot_moved=0
+  idle     calls=4       balanced=0       failed=76      moved=3761    hot_moved=64
+  newidle  calls=71      balanced=0       failed=106     moved=8       hot_moved=1735
+  active   alb_count=80 alb_failed=28
+SCHB_END v072.F256.r3
+HOG v072.F256.r3 bogo=10924.07
+###### LBMIX2-DONE ######
